@@ -7,5 +7,7 @@ export default defineEventHandler(async (event) => {
     event,
     recipes.delete.params.parse
   )
-  return await storage.del(id)
+
+  setResponseStatus(event, 204)
+  await storage.del(id)
 })

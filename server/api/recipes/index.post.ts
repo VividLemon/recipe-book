@@ -29,5 +29,6 @@ export default defineEventHandler(async (event) => {
     id: v4()
   }
 
-  return await storage.setItem(recipe.name, recipe)
+  setResponseStatus(event, 201)
+  await storage.setItem(recipe.name, recipe)
 })

@@ -19,6 +19,7 @@
     "@vueuse/nuxt": "^12.2.0",
     "bootstrap": "^5.3.3",
     "bootstrap-vue-next": "^0.26.18",
+    "bson": "^6.10.1",
     "eslint": "^8.57.0 || ^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",

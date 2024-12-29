@@ -14,15 +14,18 @@ export default defineNuxtConfig({
     public: {
       siteName: 'My Recipe Book'
     },
-    mongo: {
-      recipes: {
+    picture: {
+      storageDir: '/public'
+    }
+  },
+  nitro: {
+    storage: {
+      mongo: {
+        driver: 'mongodb',
         connectionString: 'mongodb://localhost:27017/',
         collectionName: 'recipes',
         databaseName: 'recipeBook'
-      }
-    } satisfies Record<string, MongoDbOptions>,
-    picture: {
-      storageDir: '/public'
+      } satisfies MongoDbOptions & { driver: 'mongodb' }
     }
   }
 })
