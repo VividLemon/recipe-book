@@ -1,7 +1,8 @@
 import { z } from 'zod'
-import type {
-  CreateRecipeRequest,
-  UpdateRecipeRequest
+import {
+  recipeDifficulty,
+  type CreateRecipeRequest,
+  type UpdateRecipeRequest
 } from '../../types/recipe'
 import type { MultiPartData, ProcessPhotoInput } from './photo'
 
@@ -18,7 +19,7 @@ export const recipes = {
       name: z.string().nonempty(),
       difficulty: z.number().min(1).max(5).int(),
       ingredients: z.array(z.string()).nonempty(),
-      steps: z.array(z.string()).nonempty(),
+      steps: z.string().nonempty(),
       time: z.number().min(1).int(),
       photo: z
         .object({
@@ -33,9 +34,9 @@ export const recipes = {
       id: z.string().nonempty()
     }),
     body: z.object({
-      difficulty: z.number().min(1).max(5).int(),
+      difficulty: z.enum(recipeDifficulty),
       ingredients: z.array(z.string()).nonempty(),
-      steps: z.array(z.string()).nonempty(),
+      steps: z.string().nonempty(),
       time: z.number().min(1).int(),
       name: z.string().nonempty(),
       photo: z
@@ -62,7 +63,6 @@ export const parseMultipartFormDataToRecipe = (
 
   const asNumber = Number.parseInt(val.data as unknown as string, 10)
   const isPhoto = val.name === 'photo'
-  const isDifficulty = val.name === 'difficulty'
   const isTime = val.name === 'time'
   const isIngredients = val.name === 'ingredients'
   return {
@@ -74,15 +74,9 @@ export const parseMultipartFormDataToRecipe = (
           type: val.type || ''
         } satisfies ProcessPhotoInput)
       : acc.photo,
-    difficulty:
-      isDifficulty && !Number.isNaN(asNumber) ? asNumber : acc.difficulty,
     time: isTime && !Number.isNaN(asNumber) ? asNumber : acc.time,
     ingredients: isIngredients
       ? (val.data as unknown as string).split(',')
-      : acc.ingredients,
-    steps:
-      val.name === 'steps'
-        ? (val.data as unknown as string).split(',')
-        : acc.steps
+      : acc.ingredients
   }
 }

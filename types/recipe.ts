@@ -3,14 +3,20 @@ export interface Photo {
   thumbnail: string
 }
 
+export const recipeDifficulty = ['Easy', 'Medium', 'Hard'] as const
+export interface Ingredient {
+  name: string
+  quantity: number
+}
+
 export interface Recipe {
   id: string
   createdAt: number
   updatedAt: number
   name: string
-  ingredients: string[]
-  steps: string[]
-  difficulty: number
+  ingredients: Ingredient[]
+  steps: string
+  difficulty: (typeof recipeDifficulty)[number]
   time: number
   photo?: Photo
 }

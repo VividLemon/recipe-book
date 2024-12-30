@@ -1,16 +1,22 @@
 <template>
-  <BContainer fluid="md" class="p-0 ms-0">
-    <BRow>
+  <BContainer fluid class="p-0 mx-0">
+    <BRow no-gutters>
       <BCol
-        md="3"
+        md="2"
         cols="12"
-        class="border-end p-0 your-element-class"
-        :style="nav?.showNav ? 'height: 100vh' : undefined"
+        class="border-end p-0"
+        :style="!nav?.showNav ? 'height: 100vh; width: 250px' : undefined"
       >
         <AppNavbar ref="navbar" />
       </BCol>
-      <BCol>
-        <NuxtPage />
+      <BCol class="p-0">
+        <BContainer fluid>
+          <BRow no-gutters>
+            <BCol>
+              <NuxtPage />
+            </BCol>
+          </BRow>
+        </BContainer>
       </BCol>
     </BRow>
   </BContainer>
@@ -24,15 +30,3 @@ useColorMode()
 
 const nav = useTemplateRef('navbar')
 </script>
-
-<style scoped>
-.your-element-class {
-  height: 100vh;
-}
-
-@media (max-width: 768px) {
-  .your-element-class {
-    height: 100%;
-  }
-}
-</style>

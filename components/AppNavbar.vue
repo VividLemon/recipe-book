@@ -37,8 +37,16 @@ import MenuIcon from '~icons/bi/list'
 
 const responsive = 'md'
 
+const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const offcanvasState = ref<null | InstanceType<typeof BOffcanvas>>(null)
+
+watch(
+  () => route.fullPath,
+  () => {
+    offcanvas.value = false
+  }
+)
 
 const offcanvas = ref(false)
 const showNav = computed(
