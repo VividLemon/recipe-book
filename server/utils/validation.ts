@@ -4,9 +4,36 @@ import {
   type CreateRecipeRequest,
   type UpdateRecipeRequest
 } from '../../types/recipe'
-import type { MultiPartData, ProcessPhotoInput } from './photo'
+import type { ProcessPhotoInput } from './photo'
 
 type ValidatorObject = Partial<Record<'params' | 'body' | 'query', unknown>>
+
+export const photo = {
+  delete: {
+    params: z.object({
+      id: z.string().nonempty()
+    })
+  },
+  create: {
+    body: z.array(
+      z.object({
+        data: z.instanceof(Buffer),
+        type: z.string().nonempty()
+      } satisfies Record<keyof ProcessPhotoInput, unknown>)
+    )
+  }
+} satisfies Record<string, ValidatorObject>
+
+const ingredientValidator = z.array(
+  z.object({
+    name: z.string().nonempty(),
+    quantity: z.number().min(1)
+  })
+)
+const photoValidator = z.object({
+  data: z.instanceof(Buffer),
+  type: z.string().nonempty()
+} satisfies Record<keyof ProcessPhotoInput, unknown>)
 
 export const recipes = {
   show: {
@@ -17,16 +44,11 @@ export const recipes = {
   create: {
     body: z.object({
       name: z.string().nonempty(),
-      difficulty: z.number().min(1).max(5).int(),
-      ingredients: z.array(z.string()).nonempty(),
+      difficulty: z.enum(recipeDifficulty),
+      ingredients: ingredientValidator,
       steps: z.string().nonempty(),
       time: z.number().min(1).int(),
-      photo: z
-        .object({
-          data: z.instanceof(Buffer),
-          type: z.string().nonempty()
-        } satisfies Record<keyof ProcessPhotoInput, unknown>)
-        .optional()
+      photo: photoValidator.optional()
     } satisfies Record<keyof CreateRecipeRequest, unknown>)
   },
   update: {
@@ -35,16 +57,11 @@ export const recipes = {
     }),
     body: z.object({
       difficulty: z.enum(recipeDifficulty),
-      ingredients: z.array(z.string()).nonempty(),
+      ingredients: ingredientValidator,
       steps: z.string().nonempty(),
       time: z.number().min(1).int(),
       name: z.string().nonempty(),
-      photo: z
-        .object({
-          data: z.instanceof(Buffer),
-          type: z.string().nonempty()
-        } satisfies Record<keyof ProcessPhotoInput, unknown>)
-        .optional()
+      photo: photoValidator.optional()
     } satisfies Record<keyof UpdateRecipeRequest, unknown>)
   },
   delete: {
@@ -55,6 +72,7 @@ export const recipes = {
   read: {}
 } satisfies Record<string, ValidatorObject>
 
+// Could use serialization.formDataToObj
 export const parseMultipartFormDataToRecipe = (
   acc: Record<string, unknown>,
   val: MultiPartData
@@ -67,7 +85,8 @@ export const parseMultipartFormDataToRecipe = (
   const isIngredients = val.name === 'ingredients'
   return {
     ...acc,
-    [val.name]: val.data,
+    // Assume string if !val.type
+    [val.name]: !val.type ? val.data.toString('utf-8') : val.data,
     photo: isPhoto
       ? ({
           data: val.data,
@@ -76,7 +95,7 @@ export const parseMultipartFormDataToRecipe = (
       : acc.photo,
     time: isTime && !Number.isNaN(asNumber) ? asNumber : acc.time,
     ingredients: isIngredients
-      ? (val.data as unknown as string).split(',')
+      ? JSON.parse(val.data as unknown as string)
       : acc.ingredients
   }
 }

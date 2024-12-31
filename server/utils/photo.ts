@@ -3,21 +3,27 @@ import { mkdir } from 'node:fs/promises'
 import { v4 } from 'uuid'
 import type { Photo } from '../../types/recipe'
 import { photoError } from './errors'
+import { isAbsolute, resolve } from 'node:path'
 
-export type MultiPartData = Exclude<
-  Awaited<ReturnType<typeof readMultipartFormData>>,
-  undefined
->[number]
 export type ProcessPhotoInput = {
   data: Buffer
   type: string
 }
 
-const allowedTypes = new Set(['JPEG', 'PNG', 'WebP'])
 const downsizedDimensions = {
   width: 200,
   height: 200
 } as const
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getPhotoStorageDir = (event: any) => {
+  const runtimeConfig = useRuntimeConfig(event)
+  const storageDir = runtimeConfig.picture.storageDir
+
+  return isAbsolute(storageDir)
+    ? storageDir
+    : resolve(process.cwd(), storageDir)
+}
 
 export const processPhoto = async (
   input: ProcessPhotoInput,
@@ -27,14 +33,17 @@ export const processPhoto = async (
   | { photo: Photo; error?: ReturnType<typeof photoError> }
   | { photo?: Photo; error: ReturnType<typeof photoError> }
 > => {
-  const {
-    picture: { storageDir }
-  } = useRuntimeConfig(event)
+  const runtimeConfig = useRuntimeConfig(event)
+  const acceptedImageTypes = runtimeConfig.public.picture.acceptedImageTypes
 
-  if (!input.type || !allowedTypes.has(input.type))
-    return { error: photoError({ message: 'Invalid photo type' }) }
+  if (!input.type || !acceptedImageTypes.includes(input.type))
+    return {
+      error: photoError({
+        message: `Invalid photo type. Expected ${acceptedImageTypes.join(', ')}. Got: ${input.type}`
+      })
+    }
 
-  const dir = await mkdir(storageDir, { recursive: true })
+  const dir = await mkdir(getPhotoStorageDir(event), { recursive: true })
   if (!dir) return { error: photoError({ message: 'Invalid directory' }) }
 
   const ud = v4().replace(/-/g, '')

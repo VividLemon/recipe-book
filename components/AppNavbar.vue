@@ -17,14 +17,13 @@
         {{ runtimeConfig.public.siteName }}
       </template>
       <BListGroup class="w-100 rounded-0 border-start-0 border-end-0">
-        <BListGroupItem class="border-start-0 border-end-0" to="/"
-          >Home</BListGroupItem
+        <BListGroupItem
+          v-for="item in items"
+          :key="item.title"
+          class="border-start-0 border-end-0"
+          :to="item.to"
         >
-        <BListGroupItem class="border-start-0 border-end-0" to="/recipes/create"
-          >Create Recipe</BListGroupItem
-        >
-        <BListGroupItem class="border-start-0 border-end-0" to="/settings">
-          Settings
+          {{ item.title }}
         </BListGroupItem>
       </BListGroup>
     </BOffcanvas>
@@ -32,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BOffcanvas } from 'bootstrap-vue-next'
+import { BListGroupItem, type BOffcanvas } from 'bootstrap-vue-next'
 import MenuIcon from '~icons/bi/list'
 
 const responsive = 'md'
@@ -52,6 +51,12 @@ const offcanvas = ref(false)
 const showNav = computed(
   () => offcanvasState.value?.isOpenByBreakpoint === false
 )
+
+const items = [
+  { title: 'Home', to: '/' },
+  { title: 'Create Recipe', to: '/recipes/create' },
+  { title: 'Settings', to: '/settings' }
+]
 
 defineExpose({
   showNav

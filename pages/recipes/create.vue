@@ -26,14 +26,13 @@
       </div>
     </div>
     <div>
-      <BFormTextarea
-        v-model="recipe.steps"
-        placeholder="Steps"
-        v-bind="validateState('steps')"
-      />
-      <BFormInvalidFeedback v-show="!validateState('steps')?.state">
-        {{ validateState('steps')?.invalidFeedback }}
-      </BFormInvalidFeedback>
+      <ClientOnly>
+        <TiptapEditor
+          v-model="recipe.steps"
+          :state="validateState('steps')?.state"
+          @blur="v$.recipe.steps.$touch"
+        />
+      </ClientOnly>
     </div>
     <div>
       <BFormSelect
@@ -49,7 +48,7 @@
       <BFormInput
         v-model="recipe.time"
         type="number"
-        placeholder="Time"
+        placeholder="Time in Minutes"
         v-bind="validateState('time')"
       />
       <BFormInvalidFeedback v-show="!validateState('time')?.state">
@@ -60,6 +59,7 @@
       <BFormFile
         v-model="recipe.photo"
         label="Photo"
+        :directory="nullHack"
         v-bind="validateState('photo')"
       />
       <BFormInvalidFeedback v-show="!validateState('photo')?.state">
@@ -80,11 +80,15 @@ import {
   recipeDifficulty
 } from '~/types/recipe'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const nullHack = null as any
+
+const toaster = useToaster()
 const recipe = ref({
   name: '',
   ingredients: [] as Ingredient[],
   steps: '',
-  difficulty: null,
+  difficulty: null as null | (typeof recipeDifficulty)[number],
   time: null,
   photo: null
 } satisfies Record<keyof CreateRecipeRequest, unknown> & { photo: File | null })
@@ -125,7 +129,7 @@ const validateState = (val: keyof typeof recipe.value) => {
   }
   return validated.$dirty
     ? {
-        state: !validated.$error ? null : false,
+        state: validateStateError(validated),
         invalidFeedback: validated.$errors[0]?.$message,
         ...e
       }
@@ -144,13 +148,17 @@ const onUpdateIngredient = (e: readonly string[]) => {
 }
 
 const save = async () => {
-  if (!(await v$.value.$validate())) return
+  try {
+    if (!(await v$.value.$validate())) return
 
-  const formData = objToFormData(recipe.value)
+    const formData = objToFormData(recipe.value)
 
-  $fetch('/api/recipes', {
-    method: 'POST',
-    body: JSON.stringify(recipe.value)
-  })
+    const data = await $fetch('/api/recipes', {
+      method: 'POST',
+      body: formData
+    })
+  } catch (e) {
+    toaster.apiError(e)
+  }
 }
 </script>

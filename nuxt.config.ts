@@ -12,7 +12,19 @@ export default defineNuxtConfig({
   css: ['bootstrap/dist/css/bootstrap.min.css'],
   runtimeConfig: {
     public: {
-      siteName: 'My Recipe Book'
+      siteName: 'My Recipe Book',
+      picture: {
+        acceptedImageTypes: [
+          'JPEG',
+          'JPG',
+          'PNG',
+          'WebP',
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp'
+        ]
+      }
     },
     picture: {
       storageDir: '/public'

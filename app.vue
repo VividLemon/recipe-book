@@ -20,6 +20,7 @@
       </BCol>
     </BRow>
   </BContainer>
+  <BToastOrchestrator />
 </template>
 
 <script setup lang="ts">

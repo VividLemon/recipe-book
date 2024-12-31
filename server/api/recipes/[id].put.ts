@@ -35,6 +35,6 @@ export default defineEventHandler(async (event) => {
     photo: photo ?? undefined
   }
 
-  setResponseStatus(event, 204)
   await storage.setItem(id, recipe)
+  setResponseStatus(event, 204)
 })
