@@ -1,4 +1,22 @@
 import type { MongoDbOptions } from 'unstorage/drivers/mongodb'
+
+const imageTypes = [
+  'JPEG',
+  'JPG',
+  'PNG',
+  'WebP',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp'
+]
+const acceptedImageTypes = [
+  ...new Set([
+    ...imageTypes,
+    ...imageTypes.map((el) => el.toUpperCase()),
+    ...imageTypes.map((el) => el.toLowerCase())
+  ])
+]
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
@@ -14,25 +32,16 @@ export default defineNuxtConfig({
     public: {
       siteName: 'My Recipe Book',
       picture: {
-        acceptedImageTypes: [
-          'JPEG',
-          'JPG',
-          'PNG',
-          'WebP',
-          'image/jpeg',
-          'image/jpg',
-          'image/png',
-          'image/webp'
-        ]
+        acceptedImageTypes
       }
     },
     picture: {
-      storageDir: '/public'
+      storageDir: 'public'
     }
   },
   nitro: {
     storage: {
-      mongo: {
+      mongodb: {
         driver: 'mongodb',
         connectionString: 'mongodb://localhost:27017/',
         collectionName: 'recipes',

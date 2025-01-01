@@ -26,6 +26,7 @@ import ListOlIcon from '~icons/bi/list-ol'
 import H1Icon from '~icons/bi/type-h1'
 import H2Icon from '~icons/bi/type-h2'
 import H3Icon from '~icons/bi/type-h3'
+import type { Photo } from '../types/recipe'
 
 const props = withDefaults(
   defineProps<{
@@ -61,10 +62,10 @@ const editor = useEditor({
   }
 })
 
-const addImage = (url: string | null) => {
+const addImage = (url: Photo | null) => {
   showImageModal.value = false
   if (url) {
-    editor.value?.chain().focus().setImage({ src: url }).run()
+    editor.value?.chain().focus().setImage({ src: url.default }).run()
   }
 }
 

@@ -1,14 +1,12 @@
 import Sharp from 'sharp'
-import { mkdir } from 'node:fs/promises'
 import { v4 } from 'uuid'
 import type { Photo } from '../../types/recipe'
 import { photoError } from './errors'
+import { fileTypeFromBuffer } from 'file-type'
 import { isAbsolute, resolve } from 'node:path'
+import { mkdir } from 'node:fs/promises'
 
-export type ProcessPhotoInput = {
-  data: Buffer
-  type: string
-}
+const recipePhotoPrefix = 'recipe_photo_'
 
 const downsizedDimensions = {
   width: 200,
@@ -20,13 +18,13 @@ export const getPhotoStorageDir = (event: any) => {
   const runtimeConfig = useRuntimeConfig(event)
   const storageDir = runtimeConfig.picture.storageDir
 
-  return isAbsolute(storageDir)
-    ? storageDir
-    : resolve(process.cwd(), storageDir)
+  return isAbsolute(storageDir) ? storageDir : toAbsolute(storageDir)
 }
 
+const toAbsolute = (path: string) => resolve(process.cwd(), path)
+
 export const processPhoto = async (
-  input: ProcessPhotoInput,
+  input: Buffer,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   event: any
 ): Promise<
@@ -36,24 +34,42 @@ export const processPhoto = async (
   const runtimeConfig = useRuntimeConfig(event)
   const acceptedImageTypes = runtimeConfig.public.picture.acceptedImageTypes
 
-  if (!input.type || !acceptedImageTypes.includes(input.type))
+  const type = await fileTypeFromBuffer(input)
+  if (!type || !acceptedImageTypes.includes(type.ext))
     return {
       error: photoError({
-        message: `Invalid photo type. Expected ${acceptedImageTypes.join(', ')}. Got: ${input.type}`
+        message: `Invalid photo type. Expected ${acceptedImageTypes.join(', ')}. Got: ${type}`
       })
     }
 
-  const dir = await mkdir(getPhotoStorageDir(event), { recursive: true })
-  if (!dir) return { error: photoError({ message: 'Invalid directory' }) }
+  const dir = getPhotoStorageDir(event)
+  if (!dir)
+    return {
+      error: photoError({
+        message: 'Server Error: Invalid directory',
+        statusCode: 500
+      })
+    }
+  await mkdir(dir, { recursive: true })
 
   const ud = v4().replace(/-/g, '')
-  const filename = `${dir}/${ud}.${input.type.toLowerCase()}`
-  const thumbnail = `${dir}/${ud}-small.${input.type.toLowerCase()}`
+  const largeName = `/${recipePhotoPrefix}${ud}.${type.ext.toLowerCase()}`
+  const smallName = `/${recipePhotoPrefix}${ud}-small.${type.ext.toLowerCase()}`
 
-  await Promise.all([
-    Sharp(input.data).toFile(filename),
-    Sharp(input.data).resize(downsizedDimensions).toFile(thumbnail)
-  ])
+  try {
+    await Promise.all([
+      Sharp(input).toFile(`${dir}${largeName}`),
+      Sharp(input).resize(downsizedDimensions).toFile(`${dir}${smallName}`)
+    ])
+  } catch (e) {
+    console.error(e)
+    return {
+      error: photoError({
+        statusCode: 500,
+        message: 'Server Error: Could not process photo'
+      })
+    }
+  }
 
-  return { photo: { default: filename, thumbnail: thumbnail } }
+  return { photo: { default: largeName, thumbnail: smallName } }
 }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    Show
+    Edit
     {{ recipe.data.value }}
   </div>
 </template>

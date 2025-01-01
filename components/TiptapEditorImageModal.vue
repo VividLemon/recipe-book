@@ -1,19 +1,18 @@
 <template>
   <BModal :model-value="open" @hide="emit('change', null)">
     <BFormFile
-      v-model="image"
+      v-model="file"
       label="Upload Image"
-      :state="validateStateError(v$.image)"
-      @blur="v$.image.$touch"
-      @update:model-value="v$.image.$touch"
+      :state="validateStateError(v$.file)"
+      @blur="v$.file.$touch"
+      @update:model-value="v$.file.$touch"
     />
     <BFormInvalidFeedback
-      v-if="v$.image.$dirty"
-      :state="validateStateError(v$.image)"
-      >{{
-        v$.image.$errors.map((el) => el.$message.toString())[0]
-      }}</BFormInvalidFeedback
+      v-show="v$.file.$dirty"
+      :state="validateStateError(v$.file)"
     >
+      {{ v$.file.$errors[0]?.$message }}
+    </BFormInvalidFeedback>
     <template #footer>
       <BButton
         variant="warning"
@@ -30,76 +29,53 @@
 
 <script setup lang="ts">
 import { useVuelidate } from '@vuelidate/core'
-import { required, helpers } from '@vuelidate/validators'
-
-const runtimeConfig = useRuntimeConfig()
+import type { CreatePhotoRequest } from '~/types/photo'
+import type { Photo } from '~/types/recipe'
 
 const props = defineProps<{
   open: boolean
 }>()
 const emit = defineEmits<{
-  change: [url: string | null]
+  change: [url: Photo | null]
 }>()
 
 const toaster = useToastController()
 
-const image = ref<File | null>(null)
+const isUploading = ref(false)
+
+const file = ref<File | null>(null)
+const fileValidation = usePhotoFileValidation()
 
 const v$ = useVuelidate(
-  {
-    image: {
-      required,
-      isObject: helpers.withMessage(
-        'Unknown type, expected object',
-        (v: unknown) => {
-          if (!helpers.req(v)) return true
-          return v instanceof File
-        }
-      ),
-      acceptedType: helpers.withMessage(
-        `Invalid file type. Acceptable types are: ${runtimeConfig.public.picture.acceptedImageTypes.join(', ')}`,
-        (v: unknown) => {
-          if (!helpers.req(v)) return true
-          const file = v as File
-          const included =
-            runtimeConfig.public.picture.acceptedImageTypes.includes(file.type)
-          return included
-        }
-      )
-    }
-  },
-  { image },
+  computed(() => ({
+    file: fileValidation.value
+  })),
+  { file },
   { $stopPropagation: true }
 )
 watch(
   () => props.open,
   () => {
-    image.value = null
+    file.value = null
     v$.value.$reset()
   }
 )
 
-const isUploading = ref(false)
-const uploadImage = async () => {
-  isUploading.value = true
+const onOk = async () => {
   try {
-    if (!image.value) throw new Error('No image selected')
-    const formData = new FormData()
-    formData.append('photo', image.value)
-    const data = await $fetch('/api/photo', {
+    isUploading.value = true
+    if (!(await v$.value.$validate()) || !file.value) return
+    const formData = objToFormData({
+      files: {
+        file: file.value
+      }
+    })
+
+    const data = await $fetch('/api/photos', {
       method: 'POST',
       body: formData
     })
-    return data.url.default
-  } finally {
-    isUploading.value = false
-  }
-}
-const onOk = async () => {
-  try {
-    if (!(await v$.value.$validate())) return
-    const imgUrl = await uploadImage()
-    emit('change', imgUrl)
+    emit('change', data.url)
   } catch (e: unknown) {
     toaster.show?.({
       props: {
@@ -108,6 +84,8 @@ const onOk = async () => {
         variant: 'danger'
       }
     })
+  } finally {
+    isUploading.value = false
   }
 }
 </script>

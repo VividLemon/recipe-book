@@ -8,6 +8,11 @@ export default defineEventHandler(async (event) => {
     recipes.delete.params.parse
   )
 
-  await storage.del(id)
+  const deletePreviousPhotos = async () => {
+    // const recipe = await storage.getItem(id)
+    // TODO implement this function
+  }
+
+  await Promise.all([deletePreviousPhotos(), storage.del(id)])
   setResponseStatus(event, 204)
 })

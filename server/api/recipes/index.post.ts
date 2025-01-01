@@ -1,34 +1,31 @@
-import type { Recipe } from '../../../types/recipe'
-import { noDataError, validationError } from '../../utils/errors'
+import type { CreateRecipeRequest, Recipe } from '../../../types/recipe'
+import { deserializeFormData } from '../../../utils/serialization'
 import { useRecipeStorage } from '../../utils/mongo'
 import { processPhoto } from '../../utils/photo'
-import { parseMultipartFormDataToRecipe, recipes } from '../../utils/validation'
 import { v4 } from 'uuid'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeStorage()
   const raw = await readMultipartFormData(event)
-
   if (!raw) throw noDataError
-  const obj = raw.reduce(
-    parseMultipartFormDataToRecipe,
-    {} as Record<string, unknown>
-  )
-  const z = recipes.create.body.safeParse(obj)
+  const parsed = deserializeFormData<CreateRecipeRequest>(raw)
+  const z = recipes.create.body.safeParse(parsed)
   if (z.error) throw validationError(z.error)
   const { photo: file, ...rest } = z.data
 
   const { photo, error } = file ? await processPhoto(file, event) : {}
   if (error) throw error
 
+  const id = v4()
   const recipe: Recipe = {
     ...rest,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     photo: photo ?? undefined,
-    id: v4()
+    id
   }
 
-  await storage.setItem(recipe.name, recipe)
+  await storage.setItem(id, recipe)
   setResponseStatus(event, 201)
+  return recipe
 })
