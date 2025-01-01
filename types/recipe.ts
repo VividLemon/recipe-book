@@ -1,3 +1,5 @@
+import type { BaseColorVariant } from 'bootstrap-vue-next'
+
 export interface Photo {
   default: string
   thumbnail: string
@@ -9,12 +11,44 @@ export interface Ingredient {
   quantity: number
 }
 
+export type RecipeTagVariant = keyof Pick<
+  BaseColorVariant,
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'danger'
+  | 'warning'
+  | 'info'
+  | 'light'
+  | 'dark'
+>
+export const recipeTagVariants = Object.freeze(
+  Object.keys({
+    primary: null,
+    danger: null,
+    info: null,
+    secondary: null,
+    success: null,
+    warning: null,
+    dark: null,
+    light: null
+  } satisfies Record<RecipeTagVariant, null>) as [RecipeTagVariant]
+)
+export type RecipeTag = {
+  id: string
+  createdAt: number
+  text: string
+  variant?: RecipeTagVariant
+}
+export type CreateRecipeTagRequest = Pick<RecipeTag, 'text' | 'variant'>
+
 export interface Recipe {
   id: string
   createdAt: number
   updatedAt: number
   name: string
   ingredients: Ingredient[]
+  tags: string[]
   steps: string
   difficulty: (typeof recipeDifficulty)[number]
   time: number
@@ -23,15 +57,15 @@ export interface Recipe {
 
 export type UpdateRecipeRequest = Pick<
   Recipe,
-  'name' | 'ingredients' | 'steps' | 'difficulty' | 'time'
+  'name' | 'ingredients' | 'steps' | 'difficulty' | 'time' | 'tags'
 > & { photo?: Buffer }
 
 export type CreateRecipeRequest = Pick<
   Recipe,
-  'name' | 'ingredients' | 'steps' | 'difficulty' | 'time'
+  'name' | 'ingredients' | 'steps' | 'difficulty' | 'time' | 'tags'
 > & { photo?: Buffer }
 
-export type ReadRecipeResponse = Pick<
+export type ReadRecipeResponse = (Pick<
   Recipe,
   | 'id'
   | 'createdAt'
@@ -42,7 +76,7 @@ export type ReadRecipeResponse = Pick<
   | 'difficulty'
   | 'time'
   | 'photo'
->[]
+> & { tags: RecipeTag[] })[]
 
 export type ShowRecipeResponse = Pick<
   Recipe,
@@ -55,4 +89,4 @@ export type ShowRecipeResponse = Pick<
   | 'difficulty'
   | 'time'
   | 'photo'
->
+> & { tags: RecipeTag[] }

@@ -25,7 +25,8 @@ const recipe = ref<
   steps: '',
   difficulty: null as null | (typeof recipeDifficulty)[number],
   time: null,
-  photo: null as File | null
+  photo: null as File | null,
+  tags: [] as string[]
 })
 
 const v$ = useVuelidate()
@@ -53,7 +54,8 @@ const save = async () => {
       body
     })
 
-    router.push(`/recipes/${data.id}`)
+    await router.push(`/recipes/${data.id}`)
+    toaster.apiSucceeded('Recipe created!')
   } catch (e) {
     toaster.apiError(e)
   }

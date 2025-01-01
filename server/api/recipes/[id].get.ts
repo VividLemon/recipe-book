@@ -1,4 +1,5 @@
 import { useRecipeStorage } from '../../utils/mongo'
+import { getRecipeTags, recipeTagIdToRecipeTag } from '../../utils/shared'
 import { recipes } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
@@ -7,5 +8,11 @@ export default defineEventHandler(async (event) => {
     event,
     recipes.show.params.parse
   )
-  return await storage.getItem(id)
+  const [item, tags] = await Promise.all([storage.getItem(id), getRecipeTags()])
+  return item
+    ? {
+        ...item,
+        tags: recipeTagIdToRecipeTag(item.tags, tags)
+      }
+    : null
 })

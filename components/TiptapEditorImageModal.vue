@@ -29,17 +29,16 @@
 
 <script setup lang="ts">
 import { useVuelidate } from '@vuelidate/core'
-import type { CreatePhotoRequest } from '~/types/photo'
 import type { Photo } from '~/types/recipe'
 
-const props = defineProps<{
-  open: boolean
-}>()
+const open = defineModel<boolean>({
+  required: true
+})
 const emit = defineEmits<{
   change: [url: Photo | null]
 }>()
 
-const toaster = useToastController()
+const toaster = useToaster()
 
 const isUploading = ref(false)
 
@@ -53,13 +52,10 @@ const v$ = useVuelidate(
   { file },
   { $stopPropagation: true }
 )
-watch(
-  () => props.open,
-  () => {
-    file.value = null
-    v$.value.$reset()
-  }
-)
+watch(open, () => {
+  file.value = null
+  v$.value.$reset()
+})
 
 const onOk = async () => {
   try {
@@ -75,15 +71,12 @@ const onOk = async () => {
       method: 'POST',
       body: formData
     })
+    // Lets not show this
+    // toaster.apiSucceeded('Image uploaded!')
     emit('change', data.url)
+    open.value = false
   } catch (e: unknown) {
-    toaster.show?.({
-      props: {
-        title: 'Error',
-        body: errorToString(e),
-        variant: 'danger'
-      }
-    })
+    toaster.apiError(e)
   } finally {
     isUploading.value = false
   }

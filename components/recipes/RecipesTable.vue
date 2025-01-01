@@ -7,9 +7,9 @@
 </template>
 
 <script setup lang="ts">
-import type { Recipe } from '~/types/recipe'
+import type { ReadRecipeResponse } from '~/types/recipe'
 
 defineProps<{
-  recipes: Recipe[]
+  recipes: ReadRecipeResponse
 }>()
 </script>

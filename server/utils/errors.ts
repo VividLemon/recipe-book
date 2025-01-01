@@ -25,3 +25,9 @@ export const notFoundError = createError({
   status: 404,
   message: 'Item not found'
 })
+
+export const duplicationError = (label: string) =>
+  createError({
+    status: 400,
+    message: `Item with ${label} already exists`
+  })

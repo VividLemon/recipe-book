@@ -41,12 +41,18 @@ export default defineNuxtConfig({
   },
   nitro: {
     storage: {
-      mongodb: {
+      recipes: {
         driver: 'mongodb',
         connectionString: 'mongodb://localhost:27017/',
         collectionName: 'recipes',
         databaseName: 'recipeBook'
-      } satisfies MongoDbOptions & { driver: 'mongodb' }
+      } satisfies MongoDbOptions & { driver: 'mongodb' },
+      recipeTags: {
+        driver: 'mongodb',
+        connectionString: 'mongodb://localhost:27017/',
+        collectionName: 'recipeTags',
+        databaseName: 'recipeBook'
+      }
     }
   }
 })

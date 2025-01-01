@@ -11,7 +11,7 @@
     </BButton>
   </BButtonGroup>
   <EditorContent :editor />
-  <TiptapEditorImageModal :open="showImageModal" @change="addImage" />
+  <TiptapEditorImageModal v-model="showImageModal" @change="addImage" />
 </template>
 
 <script setup lang="ts">
@@ -63,7 +63,6 @@ const editor = useEditor({
 })
 
 const addImage = (url: Photo | null) => {
-  showImageModal.value = false
   if (url) {
     editor.value?.chain().focus().setImage({ src: url.default }).run()
   }

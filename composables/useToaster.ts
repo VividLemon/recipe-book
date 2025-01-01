@@ -20,6 +20,15 @@ export const useToaster = () => {
           title: 'Error'
         }
       })
+    },
+    apiSucceeded(body: string) {
+      toaster.show?.({
+        props: {
+          variant: 'success',
+          title: 'Success',
+          body
+        }
+      })
     }
   }
 }

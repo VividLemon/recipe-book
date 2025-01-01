@@ -26,6 +26,26 @@
       </div>
     </div>
     <div>
+      <label for="select-tags">Tags</label>
+      <BInputGroup>
+        <BFormSelect
+          id="select-tags"
+          v-model="recipe.tags"
+          :options="recipeTagOptions"
+          multiple
+          value-field="id"
+          text-field="text"
+        />
+        <BButton variant="outline-info" @click="showAddModal = true"
+          ><AddIcon
+        /></BButton>
+      </BInputGroup>
+      <RecipesTagCreateModal
+        v-model="showAddModal"
+        :existing-tags="recipeTagOptions"
+      />
+    </div>
+    <div>
       <ClientOnly>
         <TiptapEditor
           v-model="recipe.steps"
@@ -60,12 +80,10 @@
         v-model="recipe.photo"
         label="Photo"
         :directory="nullHack"
-        :state="validateStateError(v$.recipe.photo)"
-        @update:model-value="v$.recipe.photo.$touch"
-        @blur="v$.recipe.photo.$touch"
+        v-bind="validateState('photo')"
       />
-      <BFormInvalidFeedback v-show="!validateStateError(v$.recipe.photo)">
-        {{ v$.$errors[0]?.$message }}
+      <BFormInvalidFeedback v-show="!validateState('photo')?.state">
+        {{ validateState('photo')?.invalidFeedback }}
       </BFormInvalidFeedback>
     </div>
     <BButton type="button" @click="emit('save')">Save</BButton>
@@ -80,6 +98,7 @@ import {
   recipeDifficulty,
   type UpdateRecipeRequest
 } from '~/types/recipe'
+import AddIcon from '~icons/bi/plus'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -91,6 +110,13 @@ const recipeDifficulties = [
 const emit = defineEmits<{
   save: []
 }>()
+
+const showAddModal = ref(false)
+const recipeTags = await useFetch('/api/recipe-tags')
+watch(showAddModal, () => {
+  recipeTags.refresh()
+})
+const recipeTagOptions = computed(() => recipeTags.data.value || [])
 
 const recipe = defineModel<
   | (Omit<CreateRecipeRequest, 'difficulty' | 'time' | 'photo'> & {
@@ -153,6 +179,8 @@ const validateState = (val: keyof typeof recipe.value) => {
 }
 const onUpdateIngredient = (e: readonly string[]) => {
   e.forEach((el) => {
+    // We can't update the individual elements here because we don't know the most recently updated element
+    // The return is just everything
     if (recipe.value.ingredients.some((ingredient) => ingredient.name === el))
       return
     recipe.value.ingredients.push({ name: el, quantity: 1 })
