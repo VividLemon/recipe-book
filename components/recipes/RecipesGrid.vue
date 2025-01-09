@@ -7,7 +7,14 @@
       :img-src="recipe.photo?.thumbnail"
       style="width: 250px"
     >
-      <BBadge v-for="tag in recipe.tags" :key="tag.id" class="ms-1">
+      <div>Time: {{ formatedTime(recipe.time) }}</div>
+
+      <BBadge
+        v-for="tag in recipe.tags"
+        :key="tag.id"
+        :variant="tag.variant"
+        class="ms-1"
+      >
         {{ tag.text }}
       </BBadge>
 
@@ -15,7 +22,10 @@
       <template #footer>
         <BButtonGroup class="w-100">
           <BButton :to="`/recipes/${recipe.id}`" class="w-75">View</BButton>
-          <BButton :variant="null" @click="toggleFavorite(recipe.id)">
+          <BButton
+            variant="outline-secondary"
+            @click="toggleFavorite(recipe.id)"
+          >
             <ClientOnly>
               <template #fallback>
                 <StarIcon />
@@ -38,4 +48,14 @@ defineProps<{
 }>()
 
 const { isFavorite, toggleFavorite } = useFavoriteRecipe()
+
+const formatedTime = (minutes: number) => {
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = minutes % 60
+  if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMinutes > 0 ? `and ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}` : ''}`
+  } else {
+    return `${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`
+  }
+}
 </script>

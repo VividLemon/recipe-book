@@ -2,6 +2,7 @@
   <BContainer fluid class="p-0 mx-0">
     <BRow no-gutters>
       <BCol
+        tag="aside"
         md="2"
         cols="12"
         class="border-end p-0"
@@ -9,7 +10,7 @@
       >
         <AppNavbar ref="navbar" />
       </BCol>
-      <BCol class="p-0">
+      <BCol tag="main" class="p-0">
         <BContainer fluid>
           <BRow no-gutters>
             <BCol>

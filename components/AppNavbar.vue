@@ -56,7 +56,7 @@ const items = [
   { title: 'Home', to: '/' },
   { title: 'Create Recipe', to: '/recipes/create' },
   { title: 'Settings', to: '/settings' }
-]
+] as const
 
 defineExpose({
   showNav

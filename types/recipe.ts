@@ -6,9 +6,63 @@ export interface Photo {
 }
 
 export const recipeDifficulty = ['Easy', 'Medium', 'Hard'] as const
+export const ingredientUnits = [
+  'units',
+  // Volume
+  'teaspoon',
+  'tablespoon',
+  'fluid ounce',
+  'cup',
+  'pint',
+  'quart',
+  'gallon',
+  'milliliter',
+  'liter',
+
+  // Weight
+  'gram',
+  'kilogram',
+  'ounce',
+  'pound',
+
+  // Quantity
+  'piece',
+  'slice',
+  'clove',
+  'stick',
+  'can',
+  'jar',
+  'package',
+  'bag',
+  'box',
+
+  // Length (e.g., noodles)
+  'inch',
+  'centimeter',
+
+  // Custom Units (user-defined or region-specific)
+  'dash',
+  'pinch',
+  'handful',
+  'scoop',
+  'bunch',
+
+  // Other
+  'sheet',
+  'sprig',
+  'stalk',
+  'head',
+  'cupcake',
+  'loaf',
+  'fillet',
+  'chunk',
+  'drop',
+  'drizzle'
+] as const
 export interface Ingredient {
   name: string
   quantity: number
+  unit: string
 }
 
 export type RecipeTagVariant = keyof Pick<

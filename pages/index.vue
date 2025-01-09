@@ -3,80 +3,68 @@
     <BRow>
       <BCol> Recipes </BCol>
     </BRow>
-    <div>
-      <BRow class="mb-3 align-items-center">
-        <BCol md="4">
-          <BFormGroup label="Filter by Name:" label-for="FilterName">
-            <BFormInput
-              id="FilterName"
-              v-model="filters.name"
-              placeholder="Enter recipe name"
-            ></BFormInput>
-          </BFormGroup>
-        </BCol>
-        <BCol md="4">
-          <BFormGroup label="Filter by Tags:" label-for="FilterTags">
-            <BFormSelect
-              id="FilterTags"
-              v-model="filters.tag"
-              :options="recipeTagOptions"
-            ></BFormSelect>
-          </BFormGroup>
-        </BCol>
-        <BCol md="4">
-          <BFormGroup
-            label="Filter by Difficulty:"
-            label-for="FilterDifficulty"
-          >
-            <BFormSelect
-              id="FilterDifficulty"
-              v-model="filters.difficulty"
-              :options="[
-                {
-                  text: 'Select difficulty',
-                  value: ''
-                },
-                ...recipeDifficulty
-              ]"
-            ></BFormSelect>
-          </BFormGroup>
-        </BCol>
-      </BRow>
-      <BRow class="mb-3 align-items-center">
-        <!-- Sort By -->
-        <BCol md="4">
-          <BFormGroup label="Sort By:" label-for="SortBy">
-            <BInputGroup>
-              <BFormSelect
-                id="SortBy"
-                v-model="sortBy"
-                :options="sortByOptions"
+    <BRow class="mb-3 align-items-center">
+      <BCol lg="4" md="6" cols="12">
+        <BFormGroup label="Filter by Name:" label-for="FilterName">
+          <BFormInput
+            id="FilterName"
+            v-model="filters.name"
+            placeholder="Enter recipe name"
+          ></BFormInput>
+        </BFormGroup>
+      </BCol>
+      <BCol lg="4" md="6" cols="12">
+        <BFormGroup label="Filter by Tags:" label-for="FilterTags">
+          <BFormSelect
+            id="FilterTags"
+            v-model="filters.tag"
+            :options="recipeTagOptions"
+          ></BFormSelect>
+        </BFormGroup>
+      </BCol>
+      <BCol lg="4" md="6" cols="12">
+        <BFormGroup label="Filter by Difficulty:" label-for="FilterDifficulty">
+          <BFormSelect
+            id="FilterDifficulty"
+            v-model="filters.difficulty"
+            :options="[
+              {
+                text: 'Select difficulty',
+                value: ''
+              },
+              ...recipeDifficulty
+            ]"
+          ></BFormSelect>
+        </BFormGroup>
+      </BCol>
+      <!-- Sort By -->
+      <BCol lg="4" md="6" cols="12">
+        <BFormGroup label="Sort By:" label-for="SortBy">
+          <BInputGroup>
+            <BFormSelect id="SortBy" v-model="sortBy" :options="sortByOptions">
+            </BFormSelect>
+            <template #append>
+              <BButton
+                variant="outline-secondary"
+                size="sm"
+                @click="toggleSortOrder"
               >
-              </BFormSelect>
-              <template #append>
-                <BButton size="sm" @click="toggleSortOrder">
-                  <ArrowUpIcon v-if="sortOrder === 'asc'" />
-                  <ArrowDownIcon v-else />
-                </BButton>
-              </template>
-            </BInputGroup>
-          </BFormGroup>
-        </BCol>
-        <!-- <BCol md="4" class="d-flex justify-content-end">
-          <BButton
-            class="w-100"
-            variant="outline-secondary"
-            @click="toggleMode"
-          >
-            <TableIcon v-if="!isTableMode" />
-            <GridIcon v-else />
-          </BButton>
-        </BCol> -->
-      </BRow>
-    </div>
+                <ArrowUpIcon v-if="sortOrder === 'asc'" />
+                <ArrowDownIcon v-else />
+              </BButton>
+            </template>
+          </BInputGroup>
+        </BFormGroup>
+      </BCol>
+      <BCol lg="4" md="6" cols="12">
+        <BFormGroup label="Table Mode:">
+          <BFormSelect v-model="tableMode" :options="tableModes" />
+        </BFormGroup>
+      </BCol>
+    </BRow>
     <BRow class="mt-2">
       <BCol>
-        <RecipesGrid v-if="!isTableMode" :recipes="computedRecipes" />
+        <RecipesGrid v-if="tableMode === 'Grid'" :recipes="computedRecipes" />
         <RecipesTable v-else :recipes="computedRecipes" />
       </BCol>
     </BRow>
@@ -90,10 +78,8 @@ import { recipeDifficulty, type Recipe } from '~/types/recipe'
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
 
-const isTableMode = ref(false)
-const toggleMode = () => {
-  isTableMode.value = !isTableMode.value
-}
+const tableModes = ['Grid', 'Table'] as const
+const tableMode = ref<(typeof tableModes)[number]>('Grid')
 
 const filters = ref({
   name: '',
