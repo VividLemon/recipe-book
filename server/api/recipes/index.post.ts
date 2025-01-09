@@ -3,6 +3,7 @@ import { deserializeFormData } from '../../../utils/serialization'
 import { useRecipeStorage } from '../../utils/mongo'
 import { processPhoto } from '../../utils/photo'
 import { v4 } from 'uuid'
+import sanitizeHtml from 'sanitize-html'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeStorage()
@@ -22,6 +23,7 @@ export default defineEventHandler(async (event) => {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     photo: photo ?? undefined,
+    steps: sanitizeHtml(rest.steps),
     id
   }
 

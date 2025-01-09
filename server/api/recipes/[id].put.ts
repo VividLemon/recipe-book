@@ -4,6 +4,7 @@ import { notFoundError } from '../../utils/errors'
 import { useRecipeStorage } from '../../utils/mongo'
 import { processPhoto } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
+import sanitizeHtml from 'sanitize-html'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeStorage()
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
     readMultipartFormData(event)
   ])
   if (!raw) throw noDataError
-  const previous = await storage.getItem(id)
+  const previous = Object.freeze(await storage.getItem(id))
   if (!previous) throw notFoundError
   const parsed = deserializeFormData<UpdateRecipeRequest>(raw)
   const z = recipes.update.body.safeParse(parsed)
@@ -25,13 +26,14 @@ export default defineEventHandler(async (event) => {
   const previousValuesNotToChange = {
     id: previous.id,
     createdAt: previous.createdAt
-  }
+  } as const
 
   const recipe: Recipe = {
     ...previous,
     ...rest,
     updatedAt: Date.now(),
     photo: photo ?? undefined,
+    steps: sanitizeHtml(rest.steps),
     ...previousValuesNotToChange
   }
 

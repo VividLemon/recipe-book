@@ -2,6 +2,7 @@
   <div>
     Show
     {{ recipe.data.value }}
+    <div v-html="recipe.data.value?.steps" />
   </div>
 </template>
 

@@ -86,7 +86,7 @@
         {{ validateState('photo')?.invalidFeedback }}
       </BFormInvalidFeedback>
     </div>
-    <BButton type="button" @click="emit('save')">Save</BButton>
+    <BButton type="button" @click="save">Save</BButton>
   </BForm>
 </template>
 
@@ -185,5 +185,10 @@ const onUpdateIngredient = (e: readonly string[]) => {
       return
     recipe.value.ingredients.push({ name: el, quantity: 1 })
   })
+}
+
+const save = async () => {
+  if (!(await v$.value.$validate())) return
+  emit('save')
 }
 </script>

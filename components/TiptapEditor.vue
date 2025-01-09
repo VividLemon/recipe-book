@@ -27,10 +27,11 @@ import H1Icon from '~icons/bi/type-h1'
 import H2Icon from '~icons/bi/type-h2'
 import H3Icon from '~icons/bi/type-h3'
 import type { Photo } from '../types/recipe'
+import type { ValidationState } from 'bootstrap-vue-next'
 
 const props = withDefaults(
   defineProps<{
-    state?: boolean | null
+    state?: ValidationState
   }>(),
   { state: null }
 )
