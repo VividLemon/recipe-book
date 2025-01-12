@@ -1,4 +1,5 @@
 import { useRecipeStorage } from '../../utils/mongo'
+import { deleteRecipePhotos } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
@@ -8,11 +9,8 @@ export default defineEventHandler(async (event) => {
     recipes.delete.params.parse
   )
 
-  const deletePreviousPhotos = async () => {
-    // const recipe = await storage.getItem(id)
-    // TODO implement this function
-  }
+  event.waitUntil(deleteRecipePhotos(event, id))
 
-  await Promise.all([deletePreviousPhotos(), storage.del(id)])
+  await storage.del(id)
   setResponseStatus(event, 204)
 })

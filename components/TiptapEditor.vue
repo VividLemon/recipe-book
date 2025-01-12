@@ -11,7 +11,12 @@
     </BButton>
   </BButtonGroup>
   <EditorContent :editor />
-  <TiptapEditorImageModal v-model="showImageModal" @change="addImage" />
+  <TiptapEditorImageModal
+    v-model="showImageModal"
+    :dimensions-resize-warning
+    :loading="isUploadingImage"
+    @add-image="onAddImage"
+  />
 </template>
 
 <script setup lang="ts">
@@ -26,17 +31,29 @@ import ListOlIcon from '~icons/bi/list-ol'
 import H1Icon from '~icons/bi/type-h1'
 import H2Icon from '~icons/bi/type-h2'
 import H3Icon from '~icons/bi/type-h3'
-import type { Photo } from '../types/recipe'
 import type { ValidationState } from 'bootstrap-vue-next'
 
 const props = withDefaults(
   defineProps<{
     state?: ValidationState
+    /**
+     * The editor doesn't have the responsibility of processing the image. We need to tell it how to do it.
+     *
+     * @param data - FormData with image file
+     *
+     * @returns The URL of the uploaded image or null if the upload failed
+     */
+    processImage: (data: {
+      data: FormData
+      preserveAspectRatio: boolean
+    }) => Promise<string | null>
+    dimensionsResizeWarning?: { height: number; width: number } | null
   }>(),
-  { state: null }
+  { state: null, dimensionsResizeWarning: null }
 )
 const emit = defineEmits<{
   blur: [FocusEvent]
+  'add-image': [src: string]
 }>()
 
 const showImageModal = ref(false)
@@ -63,9 +80,20 @@ const editor = useEditor({
   }
 })
 
-const addImage = (url: Photo | null) => {
-  if (url) {
-    editor.value?.chain().focus().setImage({ src: url.default }).run()
+const isUploadingImage = ref(false)
+const onAddImage = async (data: {
+  data: FormData
+  preserveAspectRatio: boolean
+}) => {
+  try {
+    isUploadingImage.value = true
+    const src = await props.processImage(data)
+    setTimeout(() => {
+      if (src) editor.value?.chain().focus().setImage({ src }).run()
+    }, 1000)
+  } finally {
+    isUploadingImage.value = false
+    showImageModal.value = false
   }
 }
 

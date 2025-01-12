@@ -1,8 +1,11 @@
 import type { BaseColorVariant } from 'bootstrap-vue-next'
 
-export interface Photo {
-  default: string
-  thumbnail: string
+export interface Photos {
+  coverImage?: {
+    default: string
+    thumbnail: string
+  }
+  stepsImages?: string[]
 }
 
 export const recipeDifficulty = ['Easy', 'Medium', 'Hard'] as const
@@ -106,18 +109,18 @@ export interface Recipe {
   steps: string
   difficulty: (typeof recipeDifficulty)[number]
   time: number
-  photo?: Photo
+  photos?: Photos
 }
 
 export type UpdateRecipeRequest = Pick<
   Recipe,
   'name' | 'ingredients' | 'steps' | 'difficulty' | 'time' | 'tags'
-> & { photo?: Buffer }
+> & { photos?: Buffer } & { stepsImages?: string[] }
 
 export type CreateRecipeRequest = Pick<
   Recipe,
   'name' | 'ingredients' | 'steps' | 'difficulty' | 'time' | 'tags'
-> & { photo?: Buffer }
+> & { photos?: Buffer } & { stepsImages?: string[] }
 
 export type ReadRecipeResponse = (Pick<
   Recipe,
@@ -129,7 +132,7 @@ export type ReadRecipeResponse = (Pick<
   | 'steps'
   | 'difficulty'
   | 'time'
-  | 'photo'
+  | 'photos'
 > & { tags: RecipeTag[] })[]
 
 export type ShowRecipeResponse = Pick<
@@ -142,5 +145,13 @@ export type ShowRecipeResponse = Pick<
   | 'steps'
   | 'difficulty'
   | 'time'
-  | 'photo'
+  | 'photos'
 > & { tags: RecipeTag[] }
+
+export type CreateRecipePhotoRequest = {
+  file: Buffer
+}
+
+export type AddOrphanRecipePhotosRequest = {
+  images: string[]
+}

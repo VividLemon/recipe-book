@@ -1,5 +1,9 @@
 <template>
-  <RecipesCreateUpdate v-model="recipe" @save="save" />
+  <RecipesCreateUpdate
+    v-model="recipe"
+    @save="save"
+    @add-steps-image="registerStepsImage"
+  />
 </template>
 
 <script setup lang="ts">
@@ -26,10 +30,16 @@ const recipe = ref<
   difficulty: null as null | (typeof recipeDifficulty)[number],
   time: null,
   photo: null as File | null,
-  tags: [] as string[]
+  tags: [] as string[],
+  stepsImages: [] as string[]
 })
 
 const v$ = useVuelidate()
+
+const registerStepsImage = (src: string) => {
+  recipe.value.stepsImages = recipe.value.stepsImages || []
+  recipe.value.stepsImages.push(src)
+}
 
 const save = async () => {
   try {

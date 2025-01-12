@@ -1,31 +1,23 @@
 import { z } from 'zod'
 import {
+  type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
   recipeDifficulty,
   type CreateRecipeRequest,
   type UpdateRecipeRequest,
   recipeTagVariants
 } from '../../types/recipe'
-import type { CreatePhotoRequest } from '../../types/photo'
 import { getRecipeTags } from './shared'
 
 type ValidatorObject = Partial<Record<'params' | 'body' | 'query', unknown>>
 
-// TODO
 const fileValidator = z.instanceof(Buffer)
-
-export const photos = {
-  create: {
-    body: z.object({
-      file: fileValidator
-    } satisfies Record<keyof CreatePhotoRequest, unknown>)
-  }
-} satisfies Record<string, ValidatorObject>
 
 const ingredientValidator = z.array(
   z.object({
     name: z.string().nonempty(),
-    quantity: z.number().min(1)
+    quantity: z.number().min(1),
+    unit: z.string().nonempty()
   })
 )
 const photoValidator = fileValidator
@@ -69,7 +61,8 @@ export const recipes = {
       steps: z.string().nonempty(),
       time: z.number().min(1).int(),
       tags: z.array(z.string().nonempty().uuid()),
-      photo: photoValidator.optional()
+      photos: photoValidator.optional(),
+      stepsImages: z.array(z.string().nonempty()).optional()
     } satisfies Record<keyof CreateRecipeRequest, unknown>)
   },
   update: {
@@ -83,7 +76,8 @@ export const recipes = {
       time: z.number().min(1).int(),
       name: z.string().nonempty(),
       tags: z.array(z.string().nonempty().uuid()),
-      photo: photoValidator.optional()
+      photos: photoValidator.optional(),
+      stepsImages: z.array(z.string().nonempty()).optional()
     } satisfies Record<keyof UpdateRecipeRequest, unknown>)
   },
   delete: {
@@ -92,4 +86,17 @@ export const recipes = {
     })
   },
   read: {}
+} satisfies Record<string, ValidatorObject>
+
+export const recipePhotos = {
+  createCover: {
+    body: z.object({
+      file: fileValidator
+    } satisfies Record<keyof CreateRecipePhotoRequest, unknown>),
+    query: z
+      .object({
+        preserveAspectRatio: z.enum(['true', 'false']).optional()
+      })
+      .optional()
+  }
 } satisfies Record<string, ValidatorObject>

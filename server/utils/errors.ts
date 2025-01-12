@@ -31,3 +31,13 @@ export const duplicationError = (label: string) =>
     status: 400,
     message: `Item with ${label} already exists`
   })
+
+export const noPhotoDirectoryError = createError({
+  message: 'Server Error: Invalid directory',
+  statusCode: 500
+})
+
+export const unknownPhotoError = photoError({
+  statusCode: 500,
+  message: 'Server Error: Could not process photo'
+})

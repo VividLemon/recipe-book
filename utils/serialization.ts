@@ -21,11 +21,6 @@ export const objToFormData = ({
   return formData
 }
 
-export type MultiPartData = Exclude<
-  Awaited<ReturnType<typeof readMultipartFormData>>,
-  undefined
->[number]
-
 export const deserializeFormData = <
   T extends Record<string, unknown> = Record<string, unknown>
 >(

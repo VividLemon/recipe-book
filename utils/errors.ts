@@ -1,8 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ErrorObject = Record<string, any>
-function extractErrors(obj: ErrorObject): Record<string, string[]> {
+const extractErrors = (obj: ErrorObject): Record<string, string[]> => {
   const result: Record<string, string[]> = {}
-  function deepSearch(currentObj: ErrorObject, path: string[] = []) {
+  const deepSearch = (currentObj: ErrorObject, path: string[] = []) => {
     if (currentObj && typeof currentObj === 'object') {
       for (const key in currentObj) {
         if (key === '_errors' && Array.isArray(currentObj[key])) {
@@ -16,7 +16,7 @@ function extractErrors(obj: ErrorObject): Record<string, string[]> {
     }
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function processIssues(issues: any[]) {
+  const processIssues = (issues: any[]) => {
     for (const issue of issues) {
       if (issue.path && Array.isArray(issue.path) && issue.message) {
         const key = issue.path.join('.')

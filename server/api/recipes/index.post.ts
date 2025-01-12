@@ -1,7 +1,7 @@
 import type { CreateRecipeRequest, Recipe } from '../../../types/recipe'
 import { deserializeFormData } from '../../../utils/serialization'
 import { useRecipeStorage } from '../../utils/mongo'
-import { processPhoto } from '../../utils/photo'
+import { processPhotoWithThumbnail } from '../../utils/photo'
 import { v4 } from 'uuid'
 import sanitizeHtml from 'sanitize-html'
 
@@ -12,9 +12,11 @@ export default defineEventHandler(async (event) => {
   const parsed = deserializeFormData<CreateRecipeRequest>(raw)
   const z = recipes.create.body.safeParse(parsed)
   if (z.error) throw validationError(z.error)
-  const { photo: file, ...rest } = z.data
+  const { photos: file, stepsImages, ...rest } = z.data
 
-  const { photo, error } = file ? await processPhoto(file, event) : {}
+  const { photos, error } = file
+    ? await processPhotoWithThumbnail(event, file)
+    : {}
   if (error) throw error
 
   const id = v4()
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
     ...rest,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    photo: photo ?? undefined,
+    photos: { coverImage: photos, stepsImages },
     steps: sanitizeHtml(rest.steps),
     id
   }

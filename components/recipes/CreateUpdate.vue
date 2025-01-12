@@ -62,6 +62,8 @@
           <TiptapEditor
             v-model="recipe.steps"
             :state="validateState('steps')?.state"
+            :process-image="processImage"
+            :dimensions-resize-warning="maximumRecipeStepsPhotoDimensions"
             @blur="v$.recipe.steps.$touch"
           />
         </ClientOnly>
@@ -135,7 +137,10 @@ const recipeDifficulties = [
 
 const emit = defineEmits<{
   save: []
+  'add-steps-image': [src: string]
 }>()
+
+const toaster = useToaster()
 
 const showAddModal = ref(false)
 const recipeTags = await useFetch('/api/recipe-tags')
@@ -226,4 +231,37 @@ const save = async () => {
   if (!(await v$.value.$validate())) return
   emit('save')
 }
+
+const processImage = async ({
+  data,
+  preserveAspectRatio
+}: {
+  data: FormData
+  preserveAspectRatio: boolean
+}) => {
+  try {
+    const response = await $fetch('/api/recipes/photos/add-orphaned-image', {
+      method: 'POST',
+      body: data,
+      query: {
+        preserveAspectRatio: String(preserveAspectRatio)
+      }
+    })
+
+    const image = response.url
+
+    emit('add-steps-image', image)
+
+    return image || null
+  } catch (e: unknown) {
+    toaster.apiError(e)
+    return null
+  }
+}
+
+onBeforeUnmount(() => {
+  $fetch('/api/recipes/photos/cleanup', {
+    method: 'DELETE'
+  })
+})
 </script>
