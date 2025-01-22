@@ -61,10 +61,22 @@
           <BFormSelect v-model="tableMode" :options="tableModes" />
         </BFormGroup>
       </BCol>
+      <BCol v-show="tableMode === 'Grid'" lg="4" md="6" cols="12">
+        <BFormGroup label="Grid Per Row:">
+          <BFormSelect
+            v-model="gridPerRow"
+            :options="[{ text: 'Auto', value: 'auto' }, 5, 4, 3, 2, 1]"
+          />
+        </BFormGroup>
+      </BCol>
     </BRow>
     <BRow class="mt-2">
       <BCol>
-        <RecipesGrid v-if="tableMode === 'Grid'" :recipes="computedRecipes" />
+        <RecipesGrid
+          v-if="tableMode === 'Grid'"
+          :per-row="gridPerRow"
+          :recipes="computedRecipes"
+        />
         <RecipesTable v-else :recipes="computedRecipes" />
       </BCol>
     </BRow>
@@ -78,6 +90,8 @@ import { recipeDifficulty, type Recipe } from '~/types/recipe'
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
 
+const { isFavorite } = useFavoriteRecipe()
+
 const tableModes = ['Grid', 'Table'] as const
 const tableMode = ref<(typeof tableModes)[number]>('Grid')
 
@@ -86,23 +100,31 @@ const filters = ref({
   tag: '',
   difficulty: ''
 })
-const sortByOptions: { text: string; value: '' | keyof Recipe }[] = [
+type SortByValueOptions = '' | keyof Recipe | 'favorited'
+const sortByOptions: {
+  text: string
+  value: SortByValueOptions
+}[] = [
   { text: 'Sort By', value: '' },
+  { text: 'Favorited', value: 'favorited' },
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },
   { text: 'Time', value: 'time' }
 ]
 const sortOrder = ref<'asc' | 'desc'>('asc')
-const sortBy = ref<'' | keyof Recipe>('')
+const sortBy = ref<SortByValueOptions>('')
 const toggleSortOrder = () => {
   sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
 }
 
+const gridPerRow = ref<number | 'auto'>('auto')
+
 const recipeTags = await useFetch('/api/recipe-tags')
 const recipeTagOptions = computed(() => [
   { text: 'Select a tag', value: '' },
-  recipeTags.data.value?.map((el) => ({ text: el, value: el }))
+  ...(recipeTags.data.value?.map((el) => ({ text: el.text, value: el.id })) ||
+    [])
 ])
 
 const recipes = await useFetch('/api/recipes')
@@ -115,25 +137,33 @@ const computedRecipes = computed(() => {
   }
   if (filters.value.tag) {
     items = items.filter((el) =>
-      el.tags.some((tag) =>
-        tag.text.toLowerCase().includes(filters.value.tag.toLowerCase())
-      )
+      el.tags.some((tag) => tag.id === filters.value.tag)
     )
   }
   if (filters.value.difficulty) {
     items = items.filter((el) => el.difficulty === filters.value.difficulty)
   }
   if (sortBy.value) {
-    items = items.toSorted((a, b) => {
-      if (!sortBy.value) return 0
-      const valueA = a[sortBy.value]
-      const valueB = b[sortBy.value]
-      if (typeof valueA === 'number' && typeof valueB === 'number')
-        return valueA - valueB
-      if (typeof valueA === 'string' && typeof valueB === 'string')
-        return valueA.localeCompare(valueB)
-      return 0
-    })
+    if (sortBy.value === 'favorited') {
+      const favoritedItems = items.filter((el) => isFavorite(el.id))
+      const nonFavoritedItems = items.filter((el) => !isFavorite(el.id))
+      items =
+        sortOrder.value === 'asc'
+          ? [...favoritedItems, ...nonFavoritedItems]
+          : [...nonFavoritedItems, ...favoritedItems]
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      items = items.toSorted((a: any, b: any) => {
+        if (!sortBy.value) return 0
+        const valueA = a[sortBy.value]
+        const valueB = b[sortBy.value]
+        if (typeof valueA === 'number' && typeof valueB === 'number')
+          return valueA - valueB
+        if (typeof valueA === 'string' && typeof valueB === 'string')
+          return valueA.localeCompare(valueB)
+        return 0
+      })
+    }
   }
   return items
 })

@@ -76,8 +76,7 @@ export const recipes = {
       time: z.number().min(1).int(),
       name: z.string().nonempty(),
       tags: z.array(z.string().nonempty().uuid()),
-      photos: photoValidator.optional(),
-      stepsImages: z.array(z.string().nonempty()).optional()
+      photos: photoValidator.optional()
     } satisfies Record<keyof UpdateRecipeRequest, unknown>)
   },
   delete: {
@@ -95,7 +94,8 @@ export const recipePhotos = {
     } satisfies Record<keyof CreateRecipePhotoRequest, unknown>),
     query: z
       .object({
-        preserveAspectRatio: z.enum(['true', 'false']).optional()
+        preserveAspectRatio: z.enum(['true', 'false']).optional(),
+        id: z.string().nonempty().uuid().optional()
       })
       .optional()
   }
