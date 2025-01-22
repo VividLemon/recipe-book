@@ -149,18 +149,24 @@ watch(showAddModal, () => {
 })
 const recipeTagOptions = computed(() => recipeTags.data.value || [])
 
-const recipe = defineModel<
-  | (Omit<CreateRecipeRequest, 'difficulty' | 'time' | 'photo'> & {
-      difficulty: null | string
-      time: null | string
-      photo: File | null
-    })
-  | (Omit<UpdateRecipeRequest, 'difficulty' | 'time' | 'photo'> & {
-      difficulty: null | string
-      time: null | string
-      photo: File | null
-    })
->({
+export type CreateRecipeModel = Omit<
+  CreateRecipeRequest,
+  'difficulty' | 'time' | 'photo'
+> & {
+  difficulty: null | string
+  time: null | string
+  photo: File | null
+}
+export type UpdateRecipeModel = (Omit<
+  UpdateRecipeRequest,
+  'difficulty' | 'time' | 'photo'
+> & {
+  difficulty: null | string
+  time: null | string
+  photo: File | null
+}) & { id: string }
+
+const recipe = defineModel<CreateRecipeModel | UpdateRecipeModel>({
   required: true
 })
 
@@ -244,7 +250,8 @@ const processImage = async ({
       method: 'POST',
       body: data,
       query: {
-        preserveAspectRatio: String(preserveAspectRatio)
+        preserveAspectRatio: String(preserveAspectRatio),
+        id: 'id' in recipe.value ? recipe.value.id : undefined
       }
     })
 

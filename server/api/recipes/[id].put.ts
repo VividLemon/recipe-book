@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const parsed = deserializeFormData<UpdateRecipeRequest>(raw)
   const z = recipes.update.body.safeParse(parsed)
   if (z.error) throw validationError(z.error)
-  const { photos: file, stepsImages, ...rest } = z.data
+  const { photos: file, ...rest } = z.data
 
   const { error, photos } = file
     ? await processPhotoWithThumbnail(event, file)
@@ -35,11 +35,8 @@ export default defineEventHandler(async (event) => {
     ...rest,
     updatedAt: Date.now(),
     photos: {
-      coverImage: photos,
-      stepsImages: [
-        ...(previous.photos?.stepsImages || []),
-        ...(stepsImages || [])
-      ]
+      ...previous.photos,
+      coverImage: photos
     },
     steps: sanitizeHtml(rest.steps),
     ...previousValuesNotToChange

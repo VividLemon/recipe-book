@@ -1,34 +1,95 @@
 <template>
-  <BContainer fluid class="p-0 mx-0">
+  <BContainer fluid class="m-0 p-0">
+    <BToastOrchestrator />
+    <BRow class="d-md-none">
+      <BNavbar>
+        <BButton :variant="null" @click="offcanvas = !offcanvas">
+          <MenuIcon style="font-size: 1.3em" />
+        </BButton>
+        <BNavbarBrand>{{ runtimeConfig.public.siteName }}</BNavbarBrand>
+      </BNavbar>
+    </BRow>
     <BRow no-gutters>
       <BCol
+        cols="3"
+        xl="2"
         tag="aside"
-        md="2"
-        cols="12"
-        class="border-end p-0"
-        :style="!nav?.showNav ? 'height: 100vh; width: 250px' : undefined"
+        class="bd-sidebar border-start border pe-0"
       >
-        <AppNavbar ref="navbar" />
+        <ClientOnly>
+          <BOffcanvas
+            v-model="offcanvas"
+            body-class="p-0"
+            placement="start"
+            :responsive
+          >
+            <template #title>
+              {{ runtimeConfig.public.siteName }}
+            </template>
+            <BListGroup
+              tag="nav"
+              class="w-100 rounded-0 border-start-0 border-end-0"
+            >
+              <BListGroupItem
+                v-for="item in items"
+                :key="item.title"
+                class="border-start-0 border-end-0"
+                :to="item.to"
+              >
+                {{ item.title }}
+              </BListGroupItem>
+            </BListGroup>
+          </BOffcanvas>
+        </ClientOnly>
       </BCol>
-      <BCol tag="main" class="p-0">
-        <BContainer fluid>
-          <BRow no-gutters>
-            <BCol>
-              <NuxtPage />
-            </BCol>
-          </BRow>
-        </BContainer>
+      <BCol style="overflow-y: auto; height: 100vh" class="me-0 pe-0">
+        <NuxtPage />
       </BCol>
     </BRow>
   </BContainer>
-  <BToastOrchestrator />
 </template>
 
 <script setup lang="ts">
 import { useColorMode } from 'bootstrap-vue-next/composables/useColorMode'
-import AppNavbar from './components/AppNavbar.vue'
+import MenuIcon from '~icons/bi/list'
+
+const responsive = 'md'
 
 useColorMode()
+const route = useRoute()
+const runtimeConfig = useRuntimeConfig()
 
-const nav = useTemplateRef('navbar')
+const offcanvas = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    offcanvas.value = false
+  }
+)
+
+const items = [
+  { title: 'Home', to: '/' },
+  { title: 'Create Recipe', to: '/recipes/create' },
+  { title: 'Settings', to: '/settings' }
+] as const
 </script>
+
+<style scoped>
+.bd-sidebar {
+  position: sticky;
+  display: block !important;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 767.98px) {
+  /* For screens smaller than the 'md' breakpoint */
+  .bd-sidebar {
+    position: static; /* Override sticky behavior */
+    overflow-y: visible; /* Remove scrolling for smaller screens */
+    width: 0;
+    height: 0px;
+  }
+}
+</style>

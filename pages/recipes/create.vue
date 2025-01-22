@@ -8,22 +8,13 @@
 
 <script setup lang="ts">
 import useVuelidate from '@vuelidate/core'
-import type {
-  CreateRecipeRequest,
-  Ingredient,
-  recipeDifficulty
-} from '~/types/recipe'
+import type { Ingredient, recipeDifficulty } from '~/types/recipe'
+import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
 
 const toaster = useToaster()
 const router = useRouter()
 
-const recipe = ref<
-  Omit<CreateRecipeRequest, 'difficulty' | 'time' | 'photo'> & {
-    difficulty: null | string
-    time: null | string
-    photo: File | null
-  }
->({
+const recipe = ref<CreateRecipeModel>({
   name: '',
   ingredients: [] as Ingredient[],
   steps: '',

@@ -1,5 +1,7 @@
 export const useFavoriteRecipe = () => {
-  const favorites = useLocalStorage<string[]>('favorite-recipes', [])
+  const _favorites = useLocalStorage<string[]>('favorite-recipes', [])
+  const isMounted = useMounted()
+  const favorites = computed(() => (isMounted.value ? _favorites.value : []))
 
   const isFavorite = (id: string) => favorites.value.includes(id)
   const toggleFavorite = (id: string) => {
@@ -12,7 +14,7 @@ export const useFavoriteRecipe = () => {
   }
 
   return {
-    favorites: readonly(favorites),
+    favorites,
     isFavorite,
     toggleFavorite
   }

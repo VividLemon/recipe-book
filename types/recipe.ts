@@ -2,9 +2,18 @@ import type { BaseColorVariant } from 'bootstrap-vue-next'
 
 export interface Photos {
   coverImage?: {
+    /**
+     * Represents the default image url.
+     */
     default: string
+    /**
+     * Represents the thumbnail image url.
+     */
     thumbnail: string
   }
+  /**
+   * Represents the urls of the images that are part of the steps of the recipe.
+   */
   stepsImages?: string[]
 }
 
@@ -115,7 +124,7 @@ export interface Recipe {
 export type UpdateRecipeRequest = Pick<
   Recipe,
   'name' | 'ingredients' | 'steps' | 'difficulty' | 'time' | 'tags'
-> & { photos?: Buffer } & { stepsImages?: string[] }
+> & { photos?: Buffer }
 
 export type CreateRecipeRequest = Pick<
   Recipe,

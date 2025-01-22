@@ -1,13 +1,19 @@
 <template>
-  <BCardGroup columns>
+  <BCardGroup
+    v-for="(chunk, ind) in chunkedRecipes"
+    :key="ind"
+    deck
+    class="mb-3"
+  >
     <BCard
-      v-for="recipe in recipes"
+      v-for="recipe in chunk"
       :key="recipe.id"
       :title="recipe.name"
-      :img-src="recipe.photo?.thumbnail"
-      style="width: 250px"
+      :img-src="recipe.photos?.coverImage?.thumbnail"
+      :img-alt="recipe.name"
+      :style="!sm || !isMounted ? undefined : 'width: 250px'"
     >
-      <div>Time: {{ formatedTime(recipe.time) }}</div>
+      <div>Time: {{ recipe.time }}</div>
 
       <BBadge
         v-for="tag in recipe.tags"
@@ -26,12 +32,7 @@
             variant="outline-secondary"
             @click="toggleFavorite(recipe.id)"
           >
-            <ClientOnly>
-              <template #fallback>
-                <StarIcon />
-              </template>
-              <StarIcon :class="{ 'text-warning': isFavorite(recipe.id) }" />
-            </ClientOnly>
+            <StarIcon :class="{ 'text-warning': isFavorite(recipe.id) }" />
           </BButton>
         </BButtonGroup>
       </template>
@@ -40,22 +41,37 @@
 </template>
 
 <script setup lang="ts">
+import { breakpointsBootstrapV5 } from '@vueuse/core'
 import type { ReadRecipeResponse } from '~/types/recipe'
 import StarIcon from '~icons/bi/star'
 
-defineProps<{
+const props = defineProps<{
   recipes: ReadRecipeResponse
+  perRow: number | 'auto'
 }>()
+
+const isMounted = useMounted() // used by breakpoints
 
 const { isFavorite, toggleFavorite } = useFavoriteRecipe()
 
-const formatedTime = (minutes: number) => {
-  const hours = Math.floor(minutes / 60)
-  const remainingMinutes = minutes % 60
-  if (hours > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMinutes > 0 ? `and ${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}` : ''}`
-  } else {
-    return `${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`
-  }
-}
+const { sm, active } = useBreakpoints(breakpointsBootstrapV5)
+const activeBreakpoint = active()
+const mappedBreakpointsToChunkSizes = {
+  lg: 4,
+  md: 3,
+  sm: 2,
+  xs: 1,
+  xl: 4,
+  xxl: 4,
+  '': 1
+} satisfies Record<typeof activeBreakpoint.value, number>
+const chunkSize = computed(() => {
+  if (!isMounted.value) return 0
+  if (typeof props.perRow === 'number') return props.perRow
+  return mappedBreakpointsToChunkSizes[activeBreakpoint.value] || 1
+})
+const formattedRecipes = useFormattedRecipe(() => props.recipes)
+const chunkedRecipes = computed(() =>
+  chunkArray(formattedRecipes.value, chunkSize.value)
+)
 </script>
