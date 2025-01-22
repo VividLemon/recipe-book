@@ -1,4 +1,4 @@
-import type { CreateRecipePhotoRequest, Recipe } from '../../../../types/recipe'
+import type { Recipe } from '../../../../types/recipe'
 import { deserializeFormData } from '../../../../utils/serialization'
 import { maximumRecipeStepsPhotoDimensions } from '../../../../utils/shared'
 import { processPhoto } from '../../../utils/photo'
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     getValidatedQuery(event, recipePhotos.createCover.query.parse)
   ])
   if (!raw) throw noDataError
-  const parsed = deserializeFormData<CreateRecipePhotoRequest>(raw)
+  const parsed = deserializeFormData(raw)
   const z = recipePhotos.createCover.body.safeParse(parsed)
   if (z.error) throw validationError(z.error)
   const { file } = z.data

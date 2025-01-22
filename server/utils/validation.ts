@@ -61,9 +61,12 @@ export const recipes = {
       steps: z.string().nonempty(),
       time: z.number().min(1).int(),
       tags: z.array(z.string().nonempty().uuid()),
-      photos: photoValidator.optional(),
+      coverImage: photoValidator.optional(),
       stepsImages: z.array(z.string().nonempty()).optional()
-    } satisfies Record<keyof CreateRecipeRequest, unknown>)
+    } satisfies Record<
+      keyof Omit<CreateRecipeRequest, 'photos'> | 'coverImage',
+      unknown
+    >)
   },
   update: {
     params: z.object({
@@ -76,8 +79,11 @@ export const recipes = {
       time: z.number().min(1).int(),
       name: z.string().nonempty(),
       tags: z.array(z.string().nonempty().uuid()),
-      photos: photoValidator.optional()
-    } satisfies Record<keyof UpdateRecipeRequest, unknown>)
+      coverImage: photoValidator.optional()
+    } satisfies Record<
+      keyof Omit<UpdateRecipeRequest, 'photos'> | 'coverImage',
+      unknown
+    >)
   },
   delete: {
     params: z.object({

@@ -1,5 +1,10 @@
 <template>
   <BContainer fluid>
+    <RecipesShowRecipeModal
+      v-model="previewOpen"
+      preview-mode
+      :recipe="previewRecipe"
+    />
     <BRow>
       <BCol>
         <BFormInput
@@ -97,20 +102,26 @@
     <BRow>
       <BCol>
         <BFormFile
-          v-model="recipe.photo"
-          label="Photo"
+          v-model="recipe.coverImage"
+          label="Cover Image"
           :directory="nullHack"
-          v-bind="validateState('photo')"
+          v-bind="validateState('coverImage')"
         />
-        <BFormInvalidFeedback v-show="!validateState('photo')?.state">
-          {{ validateState('photo')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!validateState('coverImage')?.state">
+          {{ validateState('coverImage')?.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
     <BRow>
       <BCol>
-        {{ recipe }}
-        <BButton type="button" @click="save">Save</BButton>
+        <BButton type="button" variant="primary" @click="save">Save</BButton>
+        <BButton
+          class="ms-1"
+          variant="info"
+          type="button"
+          @click="previewOpen = true"
+          >Preview</BButton
+        >
       </BCol>
     </BRow>
   </BContainer>
@@ -123,6 +134,7 @@ import {
   type CreateRecipeRequest,
   type Ingredient,
   ingredientUnits,
+  type ReadRecipeResponse,
   recipeDifficulty,
   type UpdateRecipeRequest
 } from '~/types/recipe'
@@ -155,7 +167,7 @@ export type CreateRecipeModel = Omit<
 > & {
   difficulty: null | string
   time: null | string
-  photo: File | null
+  coverImage: File | null
 }
 export type UpdateRecipeModel = (Omit<
   UpdateRecipeRequest,
@@ -163,8 +175,8 @@ export type UpdateRecipeModel = (Omit<
 > & {
   difficulty: null | string
   time: null | string
-  photo: File | null
-}) & { id: string }
+  coverImage: File | null
+}) & { id: string; raw: ReadRecipeResponse[number] | null }
 
 const recipe = defineModel<CreateRecipeModel | UpdateRecipeModel>({
   required: true
@@ -190,7 +202,7 @@ const v$ = useVuelidate(
       ingredients: {
         required
       },
-      photo: fileValidation.value
+      coverImage: 'id' in recipe.value ? {} : fileValidation.value
     }
   })),
   { recipe }
@@ -271,4 +283,35 @@ onBeforeUnmount(() => {
     method: 'DELETE'
   })
 })
+
+const previewOpen = ref(false)
+const previewRecipe = computed<ReadRecipeResponse[number]>(
+  () =>
+    ({
+      createdAt: 0,
+      difficulty:
+        (recipe.value.difficulty as
+          | ReadRecipeResponse[number]['difficulty']
+          | null) || 'Easy',
+      id: '',
+      ingredients: recipe.value.ingredients,
+      name: recipe.value.name,
+      steps: recipe.value.steps,
+      tags: recipeTagIdToRecipeTag(recipe.value.tags, recipeTagOptions.value),
+      time: Number.parseInt(recipe.value.time || '0'),
+      updatedAt: 0,
+      photos: {
+        coverImage: {
+          thumbnail: '',
+          default:
+            recipe.value.coverImage instanceof File
+              ? URL.createObjectURL(recipe.value.coverImage)
+              : 'raw' in recipe.value &&
+                  recipe.value.raw?.photos?.coverImage?.default
+                ? recipe.value.raw.photos.coverImage.default
+                : ''
+        }
+      }
+    }) satisfies ReadRecipeResponse[number]
+)
 </script>

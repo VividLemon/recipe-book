@@ -1,9 +1,6 @@
 import type { ReadRecipeResponse } from '../../../types/recipe'
-import {
-  getAllRecipes,
-  getRecipeTags,
-  recipeTagIdToRecipeTag
-} from '../../utils/shared'
+import { recipeTagIdToRecipeTag } from '../../../utils/recipe'
+import { getAllRecipes, getRecipeTags } from '../../utils/shared'
 
 export default defineEventHandler(async () => {
   const tagsPromise = getRecipeTags()

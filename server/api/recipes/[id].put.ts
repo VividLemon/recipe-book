@@ -1,4 +1,4 @@
-import type { Recipe, UpdateRecipeRequest } from '../../../types/recipe'
+import type { Recipe } from '../../../types/recipe'
 import { deserializeFormData } from '../../../utils/serialization'
 import { notFoundError } from '../../utils/errors'
 import { useRecipeStorage } from '../../utils/mongo'
@@ -15,12 +15,12 @@ export default defineEventHandler(async (event) => {
   if (!raw) throw noDataError
   const previous = Object.freeze(await storage.getItem(id))
   if (!previous) throw notFoundError
-  const parsed = deserializeFormData<UpdateRecipeRequest>(raw)
+  const parsed = deserializeFormData(raw)
   const z = recipes.update.body.safeParse(parsed)
   if (z.error) throw validationError(z.error)
-  const { photos: file, ...rest } = z.data
+  const { coverImage: file, ...rest } = z.data
 
-  const { error, photos } = file
+  const { error, photos: coverImage } = file
     ? await processPhotoWithThumbnail(event, file)
     : {}
   if (error) throw error
@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
     updatedAt: Date.now(),
     photos: {
       ...previous.photos,
-      coverImage: photos
+      coverImage
     },
     steps: sanitizeHtml(rest.steps),
     ...previousValuesNotToChange

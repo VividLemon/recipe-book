@@ -9,15 +9,6 @@ export const getRecipeTags = async () => {
   )) as RecipeTag[]
 }
 
-const recipeTagFallback = Object.freeze({
-  createdAt: Date.now(),
-  id: '',
-  text: '',
-  variant: undefined
-})
-export const recipeTagIdToRecipeTag = (ids: string[], tags: RecipeTag[]) =>
-  ids.map((tagId) => tags.find((tag) => tag.id === tagId) || recipeTagFallback)
-
 export const getAllRecipes = async () => {
   const storage = useRecipeStorage()
   const keys = await storage.getKeys()

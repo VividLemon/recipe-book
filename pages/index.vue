@@ -72,12 +72,39 @@
     </BRow>
     <BRow class="mt-2">
       <BCol>
-        <RecipesGrid
-          v-if="tableMode === 'Grid'"
-          :per-row="gridPerRow"
-          :recipes="computedRecipes"
-        />
-        <RecipesTable v-else :recipes="computedRecipes" />
+        <template
+          v-if="
+            recipes.status.value === 'success' && recipes.data.value?.length
+          "
+        >
+          <RecipesGrid
+            v-if="tableMode === 'Grid'"
+            :per-row="gridPerRow"
+            :recipes="computedRecipes"
+            @open-recipe="onOpenRecipe"
+          />
+          <RecipesTable
+            v-else
+            :recipes="computedRecipes"
+            @open-recipe="onOpenRecipe"
+          />
+          <RecipesShowRecipeModal
+            v-model="openRecipe"
+            :recipe="currentRecipe"
+            @hidden="currentRecipe = null"
+          />
+        </template>
+        <BAlert
+          v-else-if="recipes.status.value === 'error'"
+          :model-value="true"
+          variant="warning"
+        >
+          {{ recipes.error.value }}
+        </BAlert>
+        <BAlert v-else :model-value="true" variant="info"
+          >No recipes have been made! Make one
+          <BLink to="/recipes/create">Here</BLink>
+        </BAlert>
       </BCol>
     </BRow>
   </BContainer>
@@ -86,7 +113,11 @@
 <script setup lang="ts">
 // import TableIcon from '~icons/bi/table'
 // import GridIcon from '~icons/bi/grid'
-import { recipeDifficulty, type Recipe } from '~/types/recipe'
+import {
+  recipeDifficulty,
+  type ReadRecipeResponse,
+  type Recipe
+} from '~/types/recipe'
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
 
@@ -167,4 +198,18 @@ const computedRecipes = computed(() => {
   }
   return items
 })
+
+const openRecipe = ref(false)
+const currentRecipe = ref<ReadRecipeResponse[number] | null>(null)
+const onOpenRecipe = (id: string) => {
+  currentRecipe.value = recipes.data.value?.find((el) => el.id === id) || null
+  if (currentRecipe.value) {
+    openRecipe.value = true
+  }
+}
+
+const route = useRoute()
+if (typeof route.query.openRecipe === 'string') {
+  onOpenRecipe(route.query.openRecipe)
+}
 </script>

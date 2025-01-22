@@ -27,12 +27,14 @@
       <!-- Footer -->
       <template #footer>
         <BButtonGroup class="w-100">
-          <BButton :to="`/recipes/${recipe.id}`" class="w-75">View</BButton>
+          <BButton class="w-75" @click="emit('open-recipe', recipe.id)"
+            >View</BButton
+          >
           <BButton
             variant="outline-secondary"
             @click="toggleFavorite(recipe.id)"
           >
-            <StarIcon :class="{ 'text-warning': isFavorite(recipe.id) }" />
+            <RecipesFavoriteStarIcon :id="recipe.id" />
           </BButton>
         </BButtonGroup>
       </template>
@@ -41,18 +43,22 @@
 </template>
 
 <script setup lang="ts">
+import { RecipesFavoriteStarIcon } from '#components'
 import { breakpointsBootstrapV5 } from '@vueuse/core'
 import type { ReadRecipeResponse } from '~/types/recipe'
-import StarIcon from '~icons/bi/star'
 
 const props = defineProps<{
   recipes: ReadRecipeResponse
   perRow: number | 'auto'
 }>()
 
+const emit = defineEmits<{
+  'open-recipe': [id: string]
+}>()
+
 const isMounted = useMounted() // used by breakpoints
 
-const { isFavorite, toggleFavorite } = useFavoriteRecipe()
+const { toggleFavorite } = useFavoriteRecipe()
 
 const { sm, active } = useBreakpoints(breakpointsBootstrapV5)
 const activeBreakpoint = active()

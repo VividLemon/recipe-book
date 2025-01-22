@@ -5,8 +5,7 @@ export const objToFormData = ({
   files
 }: {
   files?: Record<string, File | null>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  body?: Record<string, any>
+  body?: Record<string, unknown>
 }) => {
   const formData = new FormData()
   if (body) {

@@ -1,5 +1,6 @@
+import { recipeTagIdToRecipeTag } from '../../../utils/recipe'
 import { useRecipeStorage } from '../../utils/mongo'
-import { getRecipeTags, recipeTagIdToRecipeTag } from '../../utils/shared'
+import { getRecipeTags } from '../../utils/shared'
 import { recipes } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {

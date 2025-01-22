@@ -12,7 +12,6 @@ import type { Ingredient, recipeDifficulty } from '~/types/recipe'
 import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
 
 const toaster = useToaster()
-const router = useRouter()
 
 const recipe = ref<CreateRecipeModel>({
   name: '',
@@ -20,7 +19,7 @@ const recipe = ref<CreateRecipeModel>({
   steps: '',
   difficulty: null as null | (typeof recipeDifficulty)[number],
   time: null,
-  photo: null as File | null,
+  coverImage: null as File | null,
   tags: [] as string[],
   stepsImages: [] as string[]
 })
@@ -32,6 +31,7 @@ const registerStepsImage = (src: string) => {
   recipe.value.stepsImages.push(src)
 }
 
+const { execute } = usePushToRootWithOpenRecipe()
 const save = async () => {
   try {
     if (
@@ -41,13 +41,13 @@ const save = async () => {
     )
       return
 
-    const { photo, ...rest } = recipe.value
+    const { coverImage, ...rest } = recipe.value
     const body = objToFormData({
       body: {
         ...rest,
         time: Number.parseInt(rest.time || '')
       },
-      files: { photo }
+      files: { coverImage }
     })
 
     const data = await $fetch('/api/recipes', {
@@ -55,7 +55,7 @@ const save = async () => {
       body
     })
 
-    await router.push(`/recipes/${data.id}`)
+    await execute(data.id)
     toaster.apiSucceeded('Recipe created!')
   } catch (e) {
     toaster.apiError(e)

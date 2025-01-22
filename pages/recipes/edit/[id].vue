@@ -23,13 +23,15 @@ const updateRecipe = ref<UpdateRecipeModel>({
   ingredients: previousRecipe.data.value?.ingredients || [],
   id: id.value || '',
   name: previousRecipe.data.value?.name || '',
-  photo: null,
+  coverImage: null,
   steps: previousRecipe.data.value?.steps || '',
   tags: previousRecipe.data.value?.tags.map((el) => el.id) || [],
-  time: previousRecipe.data.value?.time.toString() || null
+  time: previousRecipe.data.value?.time.toString() || null,
+  raw: previousRecipe.data.value
 })
 
 const v$ = useVuelidate()
+const { execute } = usePushToRootWithOpenRecipe()
 
 const save = async () => {
   try {
@@ -40,13 +42,13 @@ const save = async () => {
     )
       return
 
-    const { photo, ...rest } = updateRecipe.value
+    const { coverImage, ...rest } = updateRecipe.value
     const body = objToFormData({
       body: {
         ...rest,
         time: Number.parseInt(rest.time || '')
       },
-      files: { photo }
+      files: { coverImage }
     })
 
     await $fetch(`/api/recipes/${id.value}`, {
@@ -54,7 +56,7 @@ const save = async () => {
       body
     })
 
-    await router.push(`/recipes/${id.value}`)
+    await execute(id.value)
     toaster.apiSucceeded('Recipe created!')
   } catch (e) {
     toaster.apiError(e)
