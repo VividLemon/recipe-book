@@ -47,10 +47,12 @@
               <BButton
                 variant="outline-secondary"
                 size="sm"
+                aria-label="Toggle Sort Order"
                 @click="toggleSortOrder"
               >
-                <ArrowUpIcon v-if="sortOrder === 'asc'" />
-                <ArrowDownIcon v-else />
+                <component
+                  :is="sortOrder === 'asc' ? ArrowUpIcon : ArrowDownIcon"
+                />
               </BButton>
             </template>
           </BInputGroup>
@@ -103,7 +105,7 @@
         </BAlert>
         <BAlert v-else :model-value="true" variant="info"
           >No recipes have been made! Make one
-          <BLink to="/recipes/create">Here</BLink>
+          <BLink to="/recipes/create">here</BLink>
         </BAlert>
       </BCol>
     </BRow>
@@ -124,7 +126,13 @@ import ArrowDownIcon from '~icons/bi/arrow-down'
 const { isFavorite } = useFavoriteRecipe()
 
 const tableModes = ['Grid', 'Table'] as const
-const tableMode = ref<(typeof tableModes)[number]>('Grid')
+const tableMode = useLocalStorage<(typeof tableModes)[number]>(
+  'recipe-table-mod',
+  'Grid',
+  {
+    initOnMounted: true
+  }
+)
 
 const filters = ref({
   name: '',

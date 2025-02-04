@@ -51,7 +51,10 @@
             value-field="id"
             text-field="text"
           />
-          <BButton variant="outline-info" @click="showAddModal = true"
+          <BButton
+            variant="outline-info"
+            aria-label="Add Tag"
+            @click="showAddModal = true"
             ><AddIcon
           /></BButton>
         </BInputGroup>
@@ -114,7 +117,9 @@
     </BRow>
     <BRow>
       <BCol>
-        <BButton type="button" variant="primary" @click="save">Save</BButton>
+        <BButton type="button" :loading variant="primary" @click="save"
+          >Save</BButton
+        >
         <BButton
           class="ms-1"
           variant="info"
@@ -122,6 +127,16 @@
           @click="previewOpen = true"
           >Preview</BButton
         >
+        <BButton
+          v-if="'id' in recipe"
+          variant="danger"
+          class="ms-1"
+          :loading
+          type="button"
+          @click="emit('delete')"
+        >
+          Delete
+        </BButton>
       </BCol>
     </BRow>
   </BContainer>
@@ -147,9 +162,14 @@ const recipeDifficulties = [
   ...recipeDifficulty.map((el) => ({ value: el, text: el }))
 ]
 
+defineProps<{
+  loading: boolean
+}>()
+
 const emit = defineEmits<{
   save: []
   'add-steps-image': [src: string]
+  delete: []
 }>()
 
 const toaster = useToaster()
@@ -182,6 +202,10 @@ const recipe = defineModel<CreateRecipeModel | UpdateRecipeModel>({
   required: true
 })
 
+const isUpdateRecipe = (
+  val: CreateRecipeModel | UpdateRecipeModel
+): val is UpdateRecipeModel => 'id' in val
+
 const fileValidation = usePhotoFileValidation()
 const v$ = useVuelidate(
   computed(() => ({
@@ -202,7 +226,7 @@ const v$ = useVuelidate(
       ingredients: {
         required
       },
-      coverImage: 'id' in recipe.value ? {} : fileValidation.value
+      coverImage: isUpdateRecipe(recipe.value) ? {} : fileValidation.value
     }
   })),
   { recipe }
@@ -263,7 +287,7 @@ const processImage = async ({
       body: data,
       query: {
         preserveAspectRatio: String(preserveAspectRatio),
-        id: 'id' in recipe.value ? recipe.value.id : undefined
+        id: isUpdateRecipe(recipe.value) ? recipe.value.id : undefined
       }
     })
 

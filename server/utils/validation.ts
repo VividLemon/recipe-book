@@ -16,7 +16,7 @@ const fileValidator = z.instanceof(Buffer)
 const ingredientValidator = z.array(
   z.object({
     name: z.string().nonempty(),
-    quantity: z.number().min(1),
+    quantity: z.number().min(0),
     unit: z.string().nonempty()
   })
 )

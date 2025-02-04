@@ -4,6 +4,7 @@
       v-for="(button, index) in buttons"
       :key="index"
       :active="button.active"
+      :aria-label="button.ariaLabel || undefined"
       @click="button.onClick"
     >
       <div v-if="typeof button.content === 'string'">{{ button.content }}</div>
@@ -100,44 +101,52 @@ const onAddImage = async (data: {
 const buttons = computed(() => [
   {
     content: markRaw(H1Icon),
+    ariaLabel: 'Heading 1',
     active: editor.value?.isActive('heading', { level: 1 }),
     onClick: () =>
       editor.value?.chain().focus().toggleHeading({ level: 1 }).run()
   },
   {
     content: markRaw(H2Icon),
+    ariaLabel: 'Heading 2',
     active: editor.value?.isActive('heading', { level: 2 }),
     onClick: () =>
       editor.value?.chain().focus().toggleHeading({ level: 2 }).run()
   },
   {
     content: markRaw(H3Icon),
+    ariaLabel: 'Heading 3',
     active: editor.value?.isActive('heading', { level: 3 }),
     onClick: () =>
       editor.value?.chain().focus().toggleHeading({ level: 3 }).run()
   },
   {
     content: markRaw(ListOlIcon),
+    ariaLabel: 'Ordered List',
     active: editor.value?.isActive('orderedList'),
     onClick: () => editor.value?.chain().focus().toggleOrderedList().run()
   },
   {
     content: markRaw(ListUlIcon),
+    ariaLabel: 'Unordered List',
     active: editor.value?.isActive('bulletList'),
     onClick: () => editor.value?.chain().focus().toggleBulletList().run()
   },
   {
     content: markRaw(BoldIcon),
+    ariaLabel: 'Bold',
     active: editor.value?.isActive('bold'),
     onClick: () => editor.value?.chain().focus().toggleBold().run()
   },
   {
     content: markRaw(ItalicIcon),
+    ariaLabel: 'Italic',
     active: editor.value?.isActive('italic'),
     onClick: () => editor.value?.chain().focus().toggleItalic().run()
   },
   {
     content: markRaw(ImageIcon),
+    ariaLabel: 'Add Image',
     onClick: () => {
       showImageModal.value = true
     }

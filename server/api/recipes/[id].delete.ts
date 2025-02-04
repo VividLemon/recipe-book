@@ -11,6 +11,6 @@ export default defineEventHandler(async (event) => {
 
   event.waitUntil(deleteRecipePhotos(event, id))
 
-  await storage.del(id)
+  await storage.removeItem(id)
   setResponseStatus(event, 204)
 })

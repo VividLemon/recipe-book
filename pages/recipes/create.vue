@@ -1,6 +1,7 @@
 <template>
   <RecipesCreateUpdate
     v-model="recipe"
+    :loading
     @save="save"
     @add-steps-image="registerStepsImage"
   />
@@ -31,7 +32,8 @@ const registerStepsImage = (src: string) => {
   recipe.value.stepsImages.push(src)
 }
 
-const { execute } = usePushToRootWithOpenRecipe()
+const loading = ref(false)
+const pushToRoot = usePushToRootWithOpenRecipe()
 const save = async () => {
   try {
     if (
@@ -40,6 +42,8 @@ const save = async () => {
       !recipe.value.time
     )
       return
+
+    loading.value = true
 
     const { coverImage, ...rest } = recipe.value
     const body = objToFormData({
@@ -55,10 +59,12 @@ const save = async () => {
       body
     })
 
-    await execute(data.id)
+    await pushToRoot.execute(data.id)
     toaster.apiSucceeded('Recipe created!')
   } catch (e) {
     toaster.apiError(e)
+  } finally {
+    loading.value = false
   }
 }
 </script>

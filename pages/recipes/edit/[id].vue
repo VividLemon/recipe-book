@@ -1,5 +1,10 @@
 <template>
-  <RecipesCreateUpdate v-model="updateRecipe" @save="save" />
+  <RecipesCreateUpdate
+    v-model="updateRecipe"
+    :loading
+    @delete="deleteRecipe"
+    @save="save"
+  />
 </template>
 
 <script setup lang="ts">
@@ -31,8 +36,9 @@ const updateRecipe = ref<UpdateRecipeModel>({
 })
 
 const v$ = useVuelidate()
-const { execute } = usePushToRootWithOpenRecipe()
 
+const loading = ref(false)
+const pushToRoot = usePushToRootWithOpenRecipe()
 const save = async () => {
   try {
     if (
@@ -41,6 +47,8 @@ const save = async () => {
       !updateRecipe.value.time
     )
       return
+
+    loading.value = true
 
     const { coverImage, ...rest } = updateRecipe.value
     const body = objToFormData({
@@ -56,10 +64,37 @@ const save = async () => {
       body
     })
 
-    await execute(id.value)
+    await pushToRoot.execute(id.value)
     toaster.apiSucceeded('Recipe created!')
   } catch (e) {
     toaster.apiError(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const modalController = useModalController()
+const deleteRecipe = async () => {
+  try {
+    if (
+      !('id' in updateRecipe.value) ||
+      !(await modalController.confirm?.({
+        props: {
+          title: 'Delete Recipe',
+          body: 'Are you sure you want to delete this recipe?'
+        }
+      }))
+    )
+      return
+    loading.value = true
+    await $fetch(`/api/recipes/${updateRecipe.value.id}`, {
+      method: 'DELETE'
+    })
+    await router.push({
+      path: '/'
+    })
+  } finally {
+    loading.value = false
   }
 }
 </script>

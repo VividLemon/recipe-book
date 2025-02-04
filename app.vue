@@ -1,9 +1,14 @@
 <template>
   <BContainer fluid class="m-0 p-0">
     <BToastOrchestrator />
+    <BModalOrchestrator />
     <BRow class="d-md-none">
       <BNavbar>
-        <BButton :variant="null" @click="offcanvas = !offcanvas">
+        <BButton
+          :variant="null"
+          aria-label="Toggle Menu"
+          @click="offcanvas = !offcanvas"
+        >
           <MenuIcon style="font-size: 1.3em" />
         </BButton>
         <BNavbarBrand>{{ runtimeConfig.public.siteName }}</BNavbarBrand>
@@ -73,6 +78,27 @@ const items = [
   { title: 'Create Recipe', to: '/recipes/create' },
   { title: 'Settings', to: '/settings' }
 ] as const
+
+const localDownloadFileType = useLocalStorage<LocalFileTypeDownload>(
+  'settings.localDownloadFileType',
+  'json',
+  {
+    initOnMounted: true
+  }
+)
+const denseRecipeModal = useLocalStorage('settings.denseRecipeModal', false, {
+  initOnMounted: true
+})
+provide(systemSettingsKey, {
+  localDownloadFileType: readonly(localDownloadFileType),
+  setLocalDownloadFileType: (value) => {
+    localDownloadFileType.value = value
+  },
+  denseRecipeModal: readonly(denseRecipeModal),
+  setDenseRecipeModal: (value) => {
+    denseRecipeModal.value = value
+  }
+})
 </script>
 
 <style scoped>

@@ -8,6 +8,6 @@ export default defineEventHandler(async (event) => {
     recipeTags.delete.params.parse
   )
 
-  await storage.del(id)
+  await storage.removeItem(id)
   setResponseStatus(event, 204)
 })

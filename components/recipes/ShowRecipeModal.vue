@@ -1,20 +1,43 @@
 <template>
-  <BModal
-    v-model="open"
-    :title="
-      isPreviewMode
-        ? `Previewing Recipe: ${readableRecipe?.name || ''}`
-        : readableRecipe?.name || 'Recipe Details'
-    "
-    scrollable
-    no-footer
-    fullscreen
-    body-class="px-0"
-  >
+  <BModal v-model="open" scrollable no-footer fullscreen body-class="px-0">
+    <template #header>
+      <h5 class="modal-title">
+        {{
+          isPreviewMode
+            ? `Previewing Recipe: ${readableRecipe?.name || ''}`
+            : readableRecipe?.name || 'Recipe Details'
+        }}
+      </h5>
+      <div class="ms-auto d-flex align-items-center">
+        <template v-if="readableRecipe">
+          <BButton
+            :disabled="isPreviewMode"
+            :variant="null"
+            :to="
+              readableRecipe.id
+                ? `/recipes/edit/${readableRecipe.id}`
+                : undefined
+            "
+            aria-label="Edit Recipe"
+          >
+            <PencilIcon />
+          </BButton>
+          <BButton :variant="null" @click="toggleFavorite(readableRecipe.id)">
+            <RecipesFavoriteStarIcon
+              :id="readableRecipe.id"
+              aria-label="Toggle favorite recipe"
+            />
+          </BButton>
+        </template>
+        <BCloseButton variant="secondary" @click="open = false"
+          >Close</BCloseButton
+        >
+      </div>
+    </template>
     <template v-if="readableRecipe">
-      <BRow class="mb-2">
-        <BCol>
-          <BImg v-bind="imageProps" class="w-100" />
+      <BRow v-show="!systemSettings.denseRecipeModal.value" class="mb-2">
+        <BCol class="d-flex justify-content-center">
+          <BImg v-bind="imageProps" height="500" />
         </BCol>
       </BRow>
       <BContainer>
@@ -31,8 +54,17 @@
             </div>
 
             <div>
-              <h5>Ingredients</h5>
-              <ul>
+              <h5>
+                Ingredients
+                <BButton
+                  :variant="null"
+                  aria-label="Download Ingredients"
+                  @click="downloadIngredients"
+                >
+                  <InfoIcon />
+                </BButton>
+              </h5>
+              <ul v-if="!systemSettings.denseRecipeModal.value">
                 <li
                   v-for="{ name, quantity, unit } in readableRecipe.ingredients"
                   :key="name"
@@ -40,6 +72,16 @@
                   {{ name }} ({{ quantity }} {{ unit || ingredientUnits[0] }})
                 </li>
               </ul>
+              <div v-else>
+                {{
+                  readableRecipe.ingredients
+                    .map(
+                      ({ name, quantity, unit }) =>
+                        `${name} (${quantity} ${unit || ingredientUnits[0]})`
+                    )
+                    .join(', ')
+                }}
+              </div>
             </div>
 
             <div>
@@ -52,30 +94,6 @@
               >
                 {{ text }}
               </BBadge>
-            </div>
-
-            <div class="mt-3">
-              <BButton
-                :disabled="isPreviewMode"
-                :to="
-                  readableRecipe.id
-                    ? `/recipes/edit/${readableRecipe.id}`
-                    : undefined
-                "
-              >
-                Edit Recipe
-              </BButton>
-              <BButton
-                :disabled="isPreviewMode"
-                class="ms-2"
-                :variant="
-                  !isFavorite(readableRecipe.id) ? 'success' : 'warning'
-                "
-                @click="toggleFavorite(readableRecipe.id)"
-              >
-                {{ isFavorite(readableRecipe.id) ? 'Remove from' : 'Add to' }}
-                Favorites
-              </BButton>
             </div>
           </BCol>
         </BRow>
@@ -94,6 +112,8 @@
 
 <script setup lang="ts">
 import { ingredientUnits, type ReadRecipeResponse } from '~/types/recipe'
+import InfoIcon from '~icons/bi/file-earmark-arrow-down'
+import PencilIcon from '~icons/bi/pencil'
 
 const props = defineProps<{
   recipe: ReadRecipeResponse[number] | null
@@ -104,7 +124,7 @@ const open = defineModel<boolean>({
   required: true
 })
 
-const { toggleFavorite, isFavorite } = useFavoriteRecipe()
+const { toggleFavorite } = useFavoriteRecipe()
 
 const imageProps = computed(() => ({
   alt: readableRecipe.value?.name,
@@ -124,4 +144,22 @@ const readableRecipe = computed(() =>
 )
 
 const isPreviewMode = computed(() => props.previewMode === true)
+
+const systemSettings = useSystemSettings()
+
+const downloadIngredients = () => {
+  if (!readableRecipe.value) return
+  const data = readableRecipe.value.ingredients.map(
+    ({ name, quantity, unit }) => ({
+      name,
+      quantity,
+      unit
+    })
+  )
+  const fileDownloadType = systemSettings.localDownloadFileType.value
+  downloadByClick({
+    blob: objectToBlobSerializers[fileDownloadType](data, { human: true }),
+    filename: `${readableRecipe.value.name}.ingredients.${fileDownloadType}`
+  })
+}
 </script>

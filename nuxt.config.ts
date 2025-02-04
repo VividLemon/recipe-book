@@ -11,11 +11,9 @@ const imageTypes = [
   'image/webp'
 ]
 const acceptedImageTypes = [
-  ...new Set([
-    ...imageTypes,
-    ...imageTypes.map((el) => el.toUpperCase()),
-    ...imageTypes.map((el) => el.toLowerCase())
-  ])
+  ...new Set(
+    imageTypes.flatMap((el) => [el.toUpperCase(), el.toLowerCase(), el])
+  )
 ]
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
