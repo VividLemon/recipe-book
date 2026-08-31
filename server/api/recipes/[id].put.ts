@@ -1,4 +1,5 @@
-import type { Recipe } from '../../../types/recipe'
+import type { RecipeData } from '../../../types/recipe'
+import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
 import { notFoundError } from '../../utils/errors'
 import { useRecipeStorage } from '../../utils/mongo'
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const { coverImage: file, ...rest } = z.data
 
   const { error, photos: coverImage } = file
-    ? await processPhotoWithThumbnail(event, file)
+    ? await processPhotoWithThumbnail(file)
     : {}
   if (error) throw error
 
@@ -30,9 +31,11 @@ export default defineEventHandler(async (event) => {
     createdAt: previous.createdAt
   } as const
 
-  const recipe: Recipe = {
+  const recipe: RecipeData = {
     ...previous,
     ...rest,
+    ingredients: rest.ingredients.map(mapIngredientWebToData),
+    difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
     updatedAt: Date.now(),
     photos: {
       ...previous.photos,

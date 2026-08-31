@@ -1,5 +1,5 @@
 import type { ReadRecipeResponse } from '../../../types/recipe'
-import { recipeTagIdToRecipeTag } from '~/utils/recipe'
+import { mapRecipeDataToWeb } from '../../utils/mappers'
 import { getAllRecipes, getRecipeTags } from '../../utils/shared'
 
 export default defineEventHandler(async () => {
@@ -8,11 +8,5 @@ export default defineEventHandler(async () => {
 
   return items
     .filter((el) => el !== null)
-    .map(
-      (el) =>
-        ({
-          ...el,
-          tags: recipeTagIdToRecipeTag(el.tags, tags)
-        }) satisfies ReadRecipeResponse[number]
-    )
+    .map((el) => mapRecipeDataToWeb(el, tags)) satisfies ReadRecipeResponse
 })

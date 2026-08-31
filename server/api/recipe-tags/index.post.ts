@@ -1,5 +1,6 @@
 import { useRecipeTagsStorage } from '../../utils/mongo'
-import type { RecipeTag } from '../../../types/recipe'
+import type { RecipeTagData } from '../../../types/recipe'
+import { mapRecipeTagDataToWeb } from '../../utils/mappers'
 import { recipeTags } from '../../utils/validation'
 import { v7 } from 'uuid'
 
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event) => {
   )
 
   const id = v7()
-  const recipeTag: RecipeTag = {
+  const recipeTag: RecipeTagData = {
     ...input,
     id,
     createdAt: Date.now()
@@ -19,5 +20,5 @@ export default defineEventHandler(async (event) => {
 
   await storage.setItem(id, recipeTag)
   setResponseStatus(event, 201)
-  return recipeTag
+  return mapRecipeTagDataToWeb(recipeTag)
 })

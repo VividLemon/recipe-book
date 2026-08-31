@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     recipes.delete.params.parse
   )
 
-  event.waitUntil(deleteRecipePhotos(event, id))
+  event.waitUntil(deleteRecipePhotos(id))
 
   await storage.removeItem(id)
   setResponseStatus(event, 204)

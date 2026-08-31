@@ -1,4 +1,4 @@
-import type { Recipe } from '../../../../types/recipe'
+import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
 import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
 import { processPhoto } from '../../../utils/photo'
@@ -16,13 +16,13 @@ export default defineEventHandler(async (event) => {
   if (z.error) throw validationError(z.error)
   const { file } = z.data
 
-  let previousRecipe: Recipe | null = null
+  let previousRecipe: RecipeData | null = null
   if (query?.id) {
     previousRecipe = await storage.getItem(query.id)
     if (!previousRecipe) throw notFoundError
   }
 
-  const { photo, error } = await processPhoto(event, file, {
+  const { photo, error } = await processPhoto(file, {
     maximumDimensions: maximumRecipeStepsPhotoDimensions,
     preserveAspectRatio: query?.preserveAspectRatio
   })

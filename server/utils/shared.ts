@@ -6,7 +6,7 @@ export const getRecipeTags = async () => {
   const keys = await storage.getKeys()
   return (await Promise.all(
     keys.map((el) => storage.getItem(el))
-  )) as RecipeTag[]
+  )) as RecipeTagData[]
 }
 
 export const getAllRecipes = async () => {

@@ -1,7 +1,7 @@
 import { useRecipeStorage } from '../../utils/mongo'
 import { getRecipeTags } from '../../utils/shared'
 import { recipes } from '../../utils/validation'
-import {recipeTagIdToRecipeTag} from "~/utils/recipe.ts";
+import { mapRecipeDataToWeb } from '../../utils/mappers'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeStorage()
@@ -10,10 +10,5 @@ export default defineEventHandler(async (event) => {
     recipes.show.params.parse
   )
   const [item, tags] = await Promise.all([storage.getItem(id), getRecipeTags()])
-  return item
-    ? {
-        ...item,
-        tags: recipeTagIdToRecipeTag(item.tags, tags)
-      }
-    : null
+  return item ? mapRecipeDataToWeb(item, tags) : null
 })

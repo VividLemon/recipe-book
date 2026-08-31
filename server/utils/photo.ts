@@ -1,13 +1,13 @@
 import type { ResizeOptions } from 'sharp'
 import Sharp from 'sharp'
 import { v7 } from 'uuid'
-import type { Photos } from '../../types/recipe'
+import type { PhotosData } from '../../types/recipe'
 import { noPhotoDirectoryError, photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { isAbsolute, resolve } from 'node:path'
 import { unlink } from 'node:fs/promises'
-import type { H3Event } from '~/utils/serverTypes'
 import { stringBooleanToBoolean } from '~/utils/shared'
+import {useAppConfig} from "#imports";
 
 // Utils
 export const recipePhotoPrefix = 'recipe_photo_'
@@ -39,9 +39,9 @@ const confineDimensions = ({
 }
 
 // Validation
-export const getValidatedPhotoStorageDir = (event: H3Event) => {
-  const runtimeConfig = useRuntimeConfig(event)
-  const storageDir = runtimeConfig.picture.storageDir
+export const getValidatedPhotoStorageDir = () => {
+  const appConfig = useAppConfig()
+  const storageDir = appConfig.public.picture.storageDir
 
   const toAbsolute = (path: string) => resolve(process.cwd(), path)
 
@@ -50,9 +50,9 @@ export const getValidatedPhotoStorageDir = (event: H3Event) => {
   return { dir }
 }
 
-const getValidatedPhotoType = async (event: H3Event, input: Buffer) => {
-  const runtimeConfig = useRuntimeConfig(event)
-  const acceptedImageTypes = runtimeConfig.public.picture.acceptedImageTypes
+const getValidatedPhotoType = async (input: Buffer) => {
+  const appConfig = useAppConfig()
+  const acceptedImageTypes = appConfig.public.picture.acceptedImageTypes
 
   const type = await fileTypeFromBuffer(input)
   if (!type || !acceptedImageTypes.includes(type.ext))
@@ -65,13 +65,13 @@ const getValidatedPhotoType = async (event: H3Event, input: Buffer) => {
 }
 
 // Deleting
-export const deletePhoto = async (event: H3Event, name: string) => {
-  const { dir, error } = getValidatedPhotoStorageDir(event)
+export const deletePhoto = async (name: string) => {
+  const { dir, error } = getValidatedPhotoStorageDir()
   if (error) throw error
   await unlink(`${dir}/${name}`)
 }
 
-export const deleteRecipePhotos = async (event: H3Event, recipeId: string) => {
+export const deleteRecipePhotos = async (recipeId: string) => {
   const storage = useRecipeStorage()
   const item = await storage.getItem(recipeId)
   if (!item) throw notFoundError
@@ -79,17 +79,16 @@ export const deleteRecipePhotos = async (event: H3Event, recipeId: string) => {
   await Promise.all([
     ...(item.photos.coverImage
       ? [
-          deletePhoto(event, item.photos.coverImage.default),
-          deletePhoto(event, item.photos.coverImage.thumbnail)
+          deletePhoto(item.photos.coverImage.default),
+          deletePhoto(item.photos.coverImage.thumbnail)
         ]
       : []),
-    ...(item.photos.stepsImages ?? []).map((p) => deletePhoto(event, p))
+    ...(item.photos.stepsImages ?? []).map(deletePhoto)
   ])
 }
 
 // Processing
 export const processPhoto = async (
-  event: H3Event,
   input: Buffer,
   opts: {
     name?: string
@@ -102,10 +101,10 @@ export const processPhoto = async (
   | { photo?: string; error: ReturnType<typeof photoError> }
 > => {
   try {
-    const { error: typeError, type } = await getValidatedPhotoType(event, input)
+    const { error: typeError, type } = await getValidatedPhotoType(input)
     if (typeError) return { error: typeError }
 
-    const { dir, error: dirError } = getValidatedPhotoStorageDir(event)
+    const { dir, error: dirError } = getValidatedPhotoStorageDir()
     if (dirError) return { error: dirError }
 
     const name = opts.name || getDefaultFileName()
@@ -163,19 +162,18 @@ export const processPhoto = async (
 }
 
 export const processPhotoWithThumbnail = async (
-  event: H3Event,
   input: Buffer,
   opts: { name?: string } = {}
 ): Promise<
-  | { photos: Photos['coverImage']; error?: ReturnType<typeof photoError> }
-  | { photos?: Photos['coverImage']; error: ReturnType<typeof photoError> }
+  | { photos: PhotosData['coverImage']; error?: ReturnType<typeof photoError> }
+  | { photos?: PhotosData['coverImage']; error: ReturnType<typeof photoError> }
 > => {
   const name = opts.name || getDefaultFileName()
   const smallName = `${name}-small`
 
   const [def, thumbnail] = await Promise.all([
-    processPhoto(event, input, { name }),
-    processPhoto(event, input, {
+    processPhoto(input, { name }),
+    processPhoto(input, {
       name: smallName,
       resizeOpts: downsizedDimensions
     })
@@ -188,9 +186,9 @@ export const processPhotoWithThumbnail = async (
   } catch (e: any) {
     const promises: Promise<void>[] = []
     if (def.photo)
-      promises.push(deletePhoto(event, def.photo).catch(console.error))
+      promises.push(deletePhoto(def.photo).catch(console.error))
     if (thumbnail.photo)
-      promises.push(deletePhoto(event, thumbnail.photo).catch(console.error))
+      promises.push(deletePhoto(thumbnail.photo).catch(console.error))
     await Promise.all(promises)
     return { error: e }
   }

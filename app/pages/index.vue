@@ -32,7 +32,7 @@
                 text: 'Select difficulty',
                 value: ''
               },
-              ...recipeDifficulty
+              ...recipeDifficultyWeb
             ]"
           />
         </BFormGroup>
@@ -115,9 +115,9 @@
 // import TableIcon from '~icons/bi/table'
 // import GridIcon from '~icons/bi/grid'
 import {
-  recipeDifficulty,
+  recipeDifficultyWeb,
   type ReadRecipeResponse,
-  type Recipe
+  type RecipeWeb
 } from '../../types/recipe'
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
@@ -138,7 +138,7 @@ const filters = ref({
   tag: '',
   difficulty: ''
 })
-type SortByValueOptions = '' | keyof Recipe | 'favorite'
+type SortByValueOptions = '' | keyof RecipeWeb | 'favorite'
 const sortByOptions: {
   text: string
   value: SortByValueOptions
