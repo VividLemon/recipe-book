@@ -282,7 +282,7 @@ export interface UpdateRecipeRequest {
   steps: string
   difficulty: RecipeDifficultyWeb
   time: number
-  tags: RecipeTagWeb[]
+  tags: string[]
   photos?: Buffer
 }
 
@@ -292,7 +292,7 @@ export interface CreateRecipeRequest {
   steps: string
   difficulty: RecipeDifficultyWeb
   time: number
-  tags: RecipeTagWeb[]
+  tags: string[]
   photos?: Buffer
   stepsImages?: string[]
 }

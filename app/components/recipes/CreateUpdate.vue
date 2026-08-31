@@ -10,10 +10,10 @@
         <BFormInput
           v-model="recipe.name"
           placeholder="Name"
-          v-bind="validateState('name')"
+          v-bind="nameAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('name')?.state">
-          {{ validateState('name')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!nameAttrs.state">
+          {{ nameAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
@@ -22,11 +22,11 @@
         <BFormTags
           :model-value="recipe.ingredients.map((el) => el.name)"
           placeholder="Ingredients"
-          v-bind="validateState('ingredients')"
+          v-bind="ingredientsAttrs"
           @update:model-value="onUpdateIngredient"
         />
-        <BFormInvalidFeedback v-show="!validateState('ingredients')?.state">
-          {{ validateState('ingredients')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!ingredientsAttrs.state">
+          {{ ingredientsAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
         <template
           v-for="ingredient in recipe.ingredients"
@@ -69,10 +69,10 @@
         <ClientOnly>
           <TiptapEditor
             v-model="recipe.steps"
-            :state="validateState('steps')?.state"
+            :state="stepsAttrs.state"
             :process-image="processImage"
             :dimensions-resize-warning="maximumRecipeStepsPhotoDimensions"
-            @blur="v$.recipe.steps.$touch"
+            @blur="stepsAttrs.onBlur"
           />
         </ClientOnly>
       </BCol>
@@ -82,10 +82,10 @@
         <BFormSelect
           v-model="recipe.difficulty"
           :options="recipeDifficulties"
-          v-bind="validateState('difficulty')"
+          v-bind="difficultyAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('difficulty')?.state">
-          {{ validateState('difficulty')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!difficultyAttrs.state">
+          {{ difficultyAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
@@ -95,10 +95,10 @@
           v-model="recipe.time"
           type="number"
           placeholder="Time in Minutes"
-          v-bind="validateState('time')"
+          v-bind="timeAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('time')?.state">
-          {{ validateState('time')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!timeAttrs.state">
+          {{ timeAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
@@ -108,10 +108,10 @@
           v-model="recipe.coverImage"
           label="Cover Image"
           :directory="nullHack"
-          v-bind="validateState('coverImage')"
+          v-bind="coverImageAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('coverImage')?.state">
-          {{ validateState('coverImage')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!coverImageAttrs.state">
+          {{ coverImageAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
@@ -152,7 +152,8 @@ import {
   type UpdateRecipeRequest
 } from '../../../types/recipe'
 import AddIcon from '~icons/bi/plus'
-import {object, string, number} from 'zod'
+import {object, string, number, array} from 'zod'
+import type { PublicPathState } from 'vee-validate'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -207,9 +208,11 @@ const isUpdateRecipe = (
 
 const fileValidation = usePhotoFileValidation()
 const {
-  handleSubmit
+  handleSubmit,
+  defineField,
+  setValues
 } = useForm({
-  initialValues: recipe,
+  initialValues: recipe.value,
   validationSchema: computed(() => {
     const coverImage = fileValidation(isUpdateRecipe(recipe.value))
     return toTypedSchema(object({
@@ -217,31 +220,33 @@ const {
       difficulty: string().nonempty('Difficulty is required'),
       time: number().int('Time must be an integer').min(1, 'Time must be at least 1 minute'),
       steps: string().nonempty('Steps are required'),
-      ingredients: string().nonempty('Ingredients are required'),
+      ingredients: array(object({
+        name: string().nonempty(),
+        quantity: number(),
+        unit: string().nonempty()
+      })).min(1, 'Ingredients are required'),
       coverImage
     }))
   }),
 })
 
-const validateState = (val: keyof typeof recipe.value) => {
-  const validated = v$.value.recipe[val]
-  if (!validated) return undefined
-  const e = {
-    'onUpdate:modelValue': () => v$.value.recipe[val].$touch(),
-    onBlur: () => v$.value.recipe[val].$touch()
+// recipe is the source of truth (bound via v-model to the parent), so keep vee-validate's
+// internal form state in sync whenever it changes.
+watch(recipe, (val) => setValues(val), { deep: true })
+
+const fieldProps = (state: PublicPathState<unknown>) => ({
+  props: {
+    state: validateStateError(state),
+    invalidFeedback: state.errors[0]
   }
-  return validated.$dirty
-    ? {
-        state: validateStateError(validated),
-        invalidFeedback: validated.$errors[0]?.$message,
-        ...e
-      }
-    : {
-        ...e,
-        state: null,
-        invalidFeedback: null
-      }
-}
+})
+
+const [, nameAttrs] = defineField('name', fieldProps)
+const [, ingredientsAttrs] = defineField('ingredients', fieldProps)
+const [, stepsAttrs] = defineField('steps', fieldProps)
+const [, difficultyAttrs] = defineField('difficulty', fieldProps)
+const [, timeAttrs] = defineField('time', fieldProps)
+const [, coverImageAttrs] = defineField('coverImage', fieldProps)
 const onUpdateIngredient = (e: readonly string[]) => {
   e.forEach((el) => {
     // We can't update the individual elements here because we don't know the most recently updated element
@@ -261,10 +266,9 @@ const onUpdateIngredientItem = (e: IngredientWeb) => {
   recipe.value.ingredients[index] = e
 }
 
-const save = async () => {
-  if (!(await v$.value.$validate())) return
+const save = handleSubmit(() => {
   emit('save')
-}
+})
 
 const processImage = async ({
   data,

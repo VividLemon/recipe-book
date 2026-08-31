@@ -34,18 +34,11 @@ const updateRecipe = ref<UpdateRecipeModel>({
   raw: previousRecipe.data.value
 })
 
-const v$ = useVuelidate()
-
 const loading = ref(false)
 const pushToRoot = usePushToRootWithOpenRecipe()
 const save = async () => {
   try {
-    if (
-      !(await v$.value.$validate()) ||
-      !updateRecipe.value.difficulty ||
-      !updateRecipe.value.time
-    )
-      return
+    if (!updateRecipe.value.difficulty || !updateRecipe.value.time) return
 
     loading.value = true
 

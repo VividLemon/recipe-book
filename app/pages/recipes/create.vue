@@ -33,12 +33,7 @@ const loading = ref(false)
 const pushToRoot = usePushToRootWithOpenRecipe()
 const save = async () => {
   try {
-    if (
-      !(await v$.value.$validate()) ||
-      !recipe.value.difficulty ||
-      !recipe.value.time
-    )
-      return
+    if (!recipe.value.difficulty || !recipe.value.time) return
 
     loading.value = true
 
