@@ -8,7 +8,7 @@
     <BRow>
       <BCol>
         <BFormInput
-          v-model="recipe.name"
+          v-model="name"
           placeholder="Name"
           v-bind="nameAttrs"
         />
@@ -20,7 +20,7 @@
     <BRow>
       <BCol>
         <BFormTags
-          :model-value="recipe.ingredients.map((el) => el.name)"
+          :model-value="ingredients.map((el) => el.name)"
           placeholder="Ingredients"
           v-bind="ingredientsAttrs"
           @update:model-value="onUpdateIngredient"
@@ -29,7 +29,7 @@
           {{ ingredientsAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
         <template
-          v-for="ingredient in recipe.ingredients"
+          v-for="ingredient in ingredients"
           :key="ingredient.name"
         >
           <RecipesInputIngredient
@@ -68,7 +68,7 @@
       <BCol>
         <ClientOnly>
           <TiptapEditor
-            v-model="recipe.steps"
+            v-model="steps"
             :state="stepsAttrs.state"
             :process-image="processImage"
             :dimensions-resize-warning="maximumRecipeStepsPhotoDimensions"
@@ -80,7 +80,7 @@
     <BRow>
       <BCol>
         <BFormSelect
-          v-model="recipe.difficulty"
+          v-model="difficulty"
           :options="recipeDifficulties"
           v-bind="difficultyAttrs"
         />
@@ -92,7 +92,7 @@
     <BRow>
       <BCol>
         <BFormInput
-          v-model="recipe.time"
+          v-model="time"
           type="number"
           placeholder="Time in Minutes"
           v-bind="timeAttrs"
@@ -105,7 +105,7 @@
     <BRow>
       <BCol>
         <BFormFile
-          v-model="recipe.coverImage"
+          v-model="coverImage"
           label="Cover Image"
           :directory="nullHack"
           v-bind="coverImageAttrs"
@@ -209,10 +209,9 @@ const isUpdateRecipe = (
 const fileValidation = usePhotoFileValidation()
 const {
   handleSubmit,
-  defineField,
-  setValues
+  defineField
 } = useForm({
-  initialValues: recipe.value,
+  initialValues: recipe,
   validationSchema: computed(() => {
     const coverImage = fileValidation(isUpdateRecipe(recipe.value))
     return toTypedSchema(object({
@@ -230,10 +229,6 @@ const {
   }),
 })
 
-// recipe is the source of truth (bound via v-model to the parent), so keep vee-validate's
-// internal form state in sync whenever it changes.
-watch(recipe, (val) => setValues(val), { deep: true })
-
 const fieldProps = (state: PublicPathState<unknown>) => ({
   props: {
     state: validateStateError(state),
@@ -241,19 +236,18 @@ const fieldProps = (state: PublicPathState<unknown>) => ({
   }
 })
 
-const [, nameAttrs] = defineField('name', fieldProps)
-const [, ingredientsAttrs] = defineField('ingredients', fieldProps)
-const [, stepsAttrs] = defineField('steps', fieldProps)
-const [, difficultyAttrs] = defineField('difficulty', fieldProps)
-const [, timeAttrs] = defineField('time', fieldProps)
-const [, coverImageAttrs] = defineField('coverImage', fieldProps)
+const [name, nameAttrs] = defineField('name', fieldProps)
+const [ingredients, ingredientsAttrs] = defineField('ingredients', fieldProps)
+const [steps, stepsAttrs] = defineField('steps', fieldProps)
+const [difficulty, difficultyAttrs] = defineField('difficulty', fieldProps)
+const [time, timeAttrs] = defineField('time', fieldProps)
+const [coverImage, coverImageAttrs] = defineField('coverImage', fieldProps)
 const onUpdateIngredient = (e: readonly string[]) => {
   e.forEach((el) => {
     // We can't update the individual elements here because we don't know the most recently updated element
     // The return is just everything
-    if (recipe.value.ingredients.some((ingredient) => ingredient.name === el))
-      return
-    recipe.value.ingredients.push({
+    if (ingredients.value.some((ingredient) => ingredient.name === el)) return
+    ingredients.value.push({
       name: el,
       quantity: 1,
       unit: ingredientUnitsWeb[0]
@@ -261,12 +255,16 @@ const onUpdateIngredient = (e: readonly string[]) => {
   })
 }
 const onUpdateIngredientItem = (e: IngredientWeb) => {
-  const index = recipe.value.ingredients.findIndex((el) => el.name === e.name)
+  const index = ingredients.value.findIndex((el) => el.name === e.name)
   if (index === -1) return
-  recipe.value.ingredients[index] = e
+  ingredients.value[index] = e
 }
 
-const save = handleSubmit(() => {
+const save = handleSubmit((submitted) => {
+  recipe.value = {
+    ...recipe.value,
+    ...submitted
+  }
   emit('save')
 })
 
@@ -310,22 +308,22 @@ const previewRecipe = computed<ReadRecipeResponse[number]>(
     ({
       createdAt: 0,
       difficulty:
-        (recipe.value.difficulty as
+        (difficulty.value as
           | ReadRecipeResponse[number]['difficulty']
           | null) || 'Easy',
       id: '',
-      ingredients: recipe.value.ingredients,
-      name: recipe.value.name,
-      steps: recipe.value.steps,
+      ingredients: ingredients.value,
+      name: name.value,
+      steps: steps.value,
       tags: recipeTagIdToRecipeTag(recipe.value.tags, recipeTagOptions.value),
-      time: Number.parseInt(recipe.value.time || '0'),
+      time: Number.parseInt(time.value || '0'),
       updatedAt: 0,
       photos: {
         coverImage: {
           thumbnail: '',
           default:
-            recipe.value.coverImage instanceof File
-              ? URL.createObjectURL(recipe.value.coverImage)
+            coverImage.value instanceof File
+              ? URL.createObjectURL(coverImage.value)
               : 'raw' in recipe.value &&
                   recipe.value.raw?.photos?.coverImage?.default
                 ? recipe.value.raw.photos.coverImage.default
