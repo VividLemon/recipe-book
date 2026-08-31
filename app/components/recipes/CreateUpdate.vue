@@ -8,28 +8,28 @@
     <BRow>
       <BCol>
         <BFormInput
-          v-model="recipe.name"
+          v-model="name"
           placeholder="Name"
-          v-bind="validateState('name')"
+          v-bind="nameAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('name')?.state">
-          {{ validateState('name')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!nameAttrs.state">
+          {{ nameAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
     <BRow>
       <BCol>
         <BFormTags
-          :model-value="recipe.ingredients.map((el) => el.name)"
+          :model-value="ingredients.map((el) => el.name)"
           placeholder="Ingredients"
-          v-bind="validateState('ingredients')"
+          v-bind="ingredientsAttrs"
           @update:model-value="onUpdateIngredient"
         />
-        <BFormInvalidFeedback v-show="!validateState('ingredients')?.state">
-          {{ validateState('ingredients')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!ingredientsAttrs.state">
+          {{ ingredientsAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
         <template
-          v-for="ingredient in recipe.ingredients"
+          v-for="ingredient in ingredients"
           :key="ingredient.name"
         >
           <RecipesInputIngredient
@@ -68,11 +68,11 @@
       <BCol>
         <ClientOnly>
           <TiptapEditor
-            v-model="recipe.steps"
-            :state="validateState('steps')?.state"
+            v-model="steps"
+            :state="stepsAttrs.state"
             :process-image="processImage"
             :dimensions-resize-warning="maximumRecipeStepsPhotoDimensions"
-            @blur="v$.recipe.steps.$touch"
+            @blur="stepsAttrs.onBlur"
           />
         </ClientOnly>
       </BCol>
@@ -80,38 +80,38 @@
     <BRow>
       <BCol>
         <BFormSelect
-          v-model="recipe.difficulty"
+          v-model="difficulty"
           :options="recipeDifficulties"
-          v-bind="validateState('difficulty')"
+          v-bind="difficultyAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('difficulty')?.state">
-          {{ validateState('difficulty')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!difficultyAttrs.state">
+          {{ difficultyAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
     <BRow>
       <BCol>
         <BFormInput
-          v-model="recipe.time"
+          v-model="time"
           type="number"
           placeholder="Time in Minutes"
-          v-bind="validateState('time')"
+          v-bind="timeAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('time')?.state">
-          {{ validateState('time')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!timeAttrs.state">
+          {{ timeAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
     <BRow>
       <BCol>
         <BFormFile
-          v-model="recipe.coverImage"
+          v-model="coverImage"
           label="Cover Image"
           :directory="nullHack"
-          v-bind="validateState('coverImage')"
+          v-bind="coverImageAttrs"
         />
-        <BFormInvalidFeedback v-show="!validateState('coverImage')?.state">
-          {{ validateState('coverImage')?.invalidFeedback }}
+        <BFormInvalidFeedback v-show="!coverImageAttrs.state">
+          {{ coverImageAttrs.invalidFeedback }}
         </BFormInvalidFeedback>
       </BCol>
     </BRow>
@@ -152,7 +152,8 @@ import {
   type UpdateRecipeRequest
 } from '../../../types/recipe'
 import AddIcon from '~icons/bi/plus'
-import {object, string, number} from 'zod'
+import {object, string, number, array} from 'zod'
+import type { PublicPathState } from 'vee-validate'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -207,7 +208,8 @@ const isUpdateRecipe = (
 
 const fileValidation = usePhotoFileValidation()
 const {
-  handleSubmit
+  handleSubmit,
+  defineField
 } = useForm({
   initialValues: recipe,
   validationSchema: computed(() => {
@@ -217,38 +219,35 @@ const {
       difficulty: string().nonempty('Difficulty is required'),
       time: number().int('Time must be an integer').min(1, 'Time must be at least 1 minute'),
       steps: string().nonempty('Steps are required'),
-      ingredients: string().nonempty('Ingredients are required'),
+      ingredients: array(object({
+        name: string().nonempty(),
+        quantity: number(),
+        unit: string().nonempty()
+      })).min(1, 'Ingredients are required'),
       coverImage
     }))
   }),
 })
 
-const validateState = (val: keyof typeof recipe.value) => {
-  const validated = v$.value.recipe[val]
-  if (!validated) return undefined
-  const e = {
-    'onUpdate:modelValue': () => v$.value.recipe[val].$touch(),
-    onBlur: () => v$.value.recipe[val].$touch()
+const fieldProps = (state: PublicPathState<unknown>) => ({
+  props: {
+    state: validateStateError(state),
+    invalidFeedback: state.errors[0]
   }
-  return validated.$dirty
-    ? {
-        state: validateStateError(validated),
-        invalidFeedback: validated.$errors[0]?.$message,
-        ...e
-      }
-    : {
-        ...e,
-        state: null,
-        invalidFeedback: null
-      }
-}
+})
+
+const [name, nameAttrs] = defineField('name', fieldProps)
+const [ingredients, ingredientsAttrs] = defineField('ingredients', fieldProps)
+const [steps, stepsAttrs] = defineField('steps', fieldProps)
+const [difficulty, difficultyAttrs] = defineField('difficulty', fieldProps)
+const [time, timeAttrs] = defineField('time', fieldProps)
+const [coverImage, coverImageAttrs] = defineField('coverImage', fieldProps)
 const onUpdateIngredient = (e: readonly string[]) => {
   e.forEach((el) => {
     // We can't update the individual elements here because we don't know the most recently updated element
     // The return is just everything
-    if (recipe.value.ingredients.some((ingredient) => ingredient.name === el))
-      return
-    recipe.value.ingredients.push({
+    if (ingredients.value.some((ingredient) => ingredient.name === el)) return
+    ingredients.value.push({
       name: el,
       quantity: 1,
       unit: ingredientUnitsWeb[0]
@@ -256,15 +255,18 @@ const onUpdateIngredient = (e: readonly string[]) => {
   })
 }
 const onUpdateIngredientItem = (e: IngredientWeb) => {
-  const index = recipe.value.ingredients.findIndex((el) => el.name === e.name)
+  const index = ingredients.value.findIndex((el) => el.name === e.name)
   if (index === -1) return
-  recipe.value.ingredients[index] = e
+  ingredients.value[index] = e
 }
 
-const save = async () => {
-  if (!(await v$.value.$validate())) return
+const save = handleSubmit((submitted) => {
+  recipe.value = {
+    ...recipe.value,
+    ...submitted
+  }
   emit('save')
-}
+})
 
 const processImage = async ({
   data,
@@ -306,22 +308,22 @@ const previewRecipe = computed<ReadRecipeResponse[number]>(
     ({
       createdAt: 0,
       difficulty:
-        (recipe.value.difficulty as
+        (difficulty.value as
           | ReadRecipeResponse[number]['difficulty']
           | null) || 'Easy',
       id: '',
-      ingredients: recipe.value.ingredients,
-      name: recipe.value.name,
-      steps: recipe.value.steps,
+      ingredients: ingredients.value,
+      name: name.value,
+      steps: steps.value,
       tags: recipeTagIdToRecipeTag(recipe.value.tags, recipeTagOptions.value),
-      time: Number.parseInt(recipe.value.time || '0'),
+      time: Number.parseInt(time.value || '0'),
       updatedAt: 0,
       photos: {
         coverImage: {
           thumbnail: '',
           default:
-            recipe.value.coverImage instanceof File
-              ? URL.createObjectURL(recipe.value.coverImage)
+            coverImage.value instanceof File
+              ? URL.createObjectURL(coverImage.value)
               : 'raw' in recipe.value &&
                   recipe.value.raw?.photos?.coverImage?.default
                 ? recipe.value.raw.photos.coverImage.default

@@ -8,7 +8,7 @@
 
     <div>
       <BFormFile
-        v-model="(file as File | null)"
+        v-model="file"
         label="Upload Image"
         v-bind="fileAttrs"
       />
