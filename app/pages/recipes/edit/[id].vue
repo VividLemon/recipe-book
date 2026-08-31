@@ -64,27 +64,22 @@ const save = async () => {
     })
 
     await pushToRoot.execute(id.value)
-    toaster.apiSucceeded('Recipe created!')
+    await using _ = await toaster.apiSucceeded('Recipe created!')
   } catch (e) {
-    toaster.apiError(e)
+    await using _ = await toaster.apiError(e)
   } finally {
     loading.value = false
   }
 }
 
-const modalController = useModalController()
+const modalController = useModal()
 const deleteRecipe = async () => {
   try {
-    if (
-      !('id' in updateRecipe.value) ||
-      !(await modalController.confirm?.({
-        props: {
-          title: 'Delete Recipe',
-          body: 'Are you sure you want to delete this recipe?'
-        }
-      }))
-    )
-      return
+    await using resp = await modalController.create({
+      title: 'Delete Recipe',
+      body: 'Are you sure you want to delete this recipe?'
+    }).show()
+    if (!('id' in updateRecipe.value) || !resp.ok) return
     loading.value = true
     await $fetch(`/api/recipes/${updateRecipe.value.id}`, {
       method: 'DELETE'

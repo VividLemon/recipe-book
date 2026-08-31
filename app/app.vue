@@ -10,7 +10,7 @@
           >
             <MenuIcon style="font-size: 1.3em" />
           </BButton>
-          <BNavbarBrand>{{ runtimeConfig.public.siteName }}</BNavbarBrand>
+          <BNavbarBrand>{{ appConfig.siteName }}</BNavbarBrand>
         </BNavbar>
       </BRow>
       <BRow no-gutters>
@@ -27,7 +27,7 @@
               responsive="md"
           >
             <template #title>
-              {{ runtimeConfig.public.siteName }}
+              {{ appConfig.siteName }}
             </template>
             <BListGroup
                 tag="nav"
@@ -57,7 +57,7 @@ import MenuIcon from '~icons/bi/list'
 import {configureVeeValidate} from "~/utils/configureVeeValidate.ts";
 
 useColorMode()
-const runtimeConfig = useRuntimeConfig()
+const appConfig = useAppConfig()
 provideSystemSettings()
 configureVeeValidate()
 
