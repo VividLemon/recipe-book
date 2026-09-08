@@ -31,7 +31,7 @@ const updateRecipe = ref<UpdateRecipeModel>({
   steps: previousRecipe.data.value?.steps || '',
   tags: previousRecipe.data.value?.tags.map((el) => el.id) || [],
   time: previousRecipe.data.value?.time.toString() || null,
-  raw: previousRecipe.data.value
+  raw: previousRecipe.data.value ?? null
 })
 
 const loading = ref(false)

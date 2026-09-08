@@ -16,13 +16,15 @@ export default defineEventHandler(async (event) => {
           ...(el?.photos?.stepsImages ?? [])
         ])
       )
-      const { dir, error } = getValidatedPhotoStorageDir(event)
+      const { dir, error } = getValidatedPhotoStorageDir()
       if (error) throw error
-      const files = await readdir(dir)
+      const photoDir = dir ?? ''
+      if (!photoDir) return
+      const files = await readdir(photoDir)
       await Promise.all(
         files.map((el) => {
           if (el.startsWith(recipePhotoPrefix) && !allImages.has(el)) {
-            return unlink(`${dir}/${el}`)
+            return unlink(`${photoDir}/${el}`)
           }
           return Promise.resolve()
         })
