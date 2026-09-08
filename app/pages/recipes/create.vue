@@ -52,9 +52,9 @@ const save = async () => {
     })
 
     await pushToRoot.execute(data.id)
-    toaster.apiSucceeded('Recipe created!')
+    await using _ = await toaster.apiSucceeded('Recipe created!')
   } catch (e) {
-    toaster.apiError(e)
+    await using _ = await toaster.apiError(e)
   } finally {
     loading.value = false
   }

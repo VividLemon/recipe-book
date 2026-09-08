@@ -68,7 +68,7 @@ const {
   }))))
 })
 
-const [file, fileAttrs] = defineField('file')
+const [file, fileAttrs] = defineField('file') as unknown as [Ref<File | null>, Record<string, unknown>]
 const [preserveAspectRatio, preserveAspectRatioAttrs] = defineField('preserveAspectRatio')
 
 const onSubmit = handleSubmit((submitted) => {

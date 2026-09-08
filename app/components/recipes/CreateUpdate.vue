@@ -23,7 +23,13 @@
           :model-value="ingredients.map((el) => el.name)"
           placeholder="Ingredients"
           v-bind="ingredientsAttrs"
-          @update:model-value="onUpdateIngredient"
+          @tag-added="(els) => {
+            els.forEach((el) => {ingredients.push({
+              name: el,
+              quantity: 1,
+              unit: ingredientUnitsWeb[0]
+            })})
+          }"
         />
         <BFormInvalidFeedback v-show="!ingredientsAttrs.state">
           {{ ingredientsAttrs.invalidFeedback }}
@@ -34,6 +40,7 @@
         >
           <RecipesInputIngredient
             :model-value="ingredient"
+            :name="ingredient.name"
             @update:model-value="onUpdateIngredientItem"
           />
         </template>
@@ -149,11 +156,11 @@ import {
   ingredientUnitsWeb,
   type ReadRecipeResponse,
   recipeDifficultyWeb,
-  type UpdateRecipeRequest
+  type RecipeDifficultyWeb,
+  type UpdateRecipeRequest, type RecipeWeb
 } from '../../../types/recipe'
 import AddIcon from '~icons/bi/plus'
-import {object, string, number, array} from 'zod'
-import type { PublicPathState } from 'vee-validate'
+import {object, string, number, array, enum as zEnum} from 'zod'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -185,7 +192,7 @@ export type CreateRecipeModel = Omit<
   CreateRecipeRequest,
   'difficulty' | 'time' | 'photo'
 > & {
-  difficulty: null | string
+  difficulty: RecipeDifficultyWeb | null
   time: null | string
   coverImage: File | null
 }
@@ -193,7 +200,7 @@ export type UpdateRecipeModel = (Omit<
   UpdateRecipeRequest,
   'difficulty' | 'time' | 'photo'
 > & {
-  difficulty: null | string
+  difficulty: RecipeDifficultyWeb | null
   time: null | string
   coverImage: File | null
 }) & { id: string; raw: ReadRecipeResponse[number] | null }
@@ -206,54 +213,63 @@ const isUpdateRecipe = (
   val: CreateRecipeModel | UpdateRecipeModel
 ): val is UpdateRecipeModel => 'id' in val
 
+// `CreateRecipeModel`/`UpdateRecipeModel` diverge on a few fields (`id`, `raw`, `tags`,
+// `stepsImages`) that vee-validate doesn't need to know about. Unifying the fields that
+// are actually validated into a single shape here keeps `initialValues` and
+// `validationSchema` in agreement (see vee-validate's typed schemas guide), and the two
+// models are re-separated again in `save` when merging the submitted values back in.
+interface RecipeFormValues {
+  name: string
+  difficulty: RecipeDifficultyWeb | null
+  time: string | null
+  steps: string
+  ingredients: IngredientWeb[]
+  coverImage: File | null
+}
+
+interface RecipeFormOutput {
+  name: string
+  difficulty: RecipeDifficultyWeb | null
+  time: number
+  steps: string
+  ingredients: IngredientWeb[]
+  coverImage: File | null
+}
+
 const fileValidation = usePhotoFileValidation()
 const {
   handleSubmit,
   defineField
-} = useForm({
-  initialValues: recipe,
+} = useForm<RecipeFormValues, RecipeFormOutput>({
+  initialValues: recipe.value,
   validationSchema: computed(() => {
     const coverImage = fileValidation(isUpdateRecipe(recipe.value))
     return toTypedSchema(object({
-      name: string().nonempty('Name is required'),
-      difficulty: string().nonempty('Difficulty is required'),
-      time: number().int('Time must be an integer').min(1, 'Time must be at least 1 minute'),
-      steps: string().nonempty('Steps are required'),
+      name: string().min(1, 'Name is required'),
+      difficulty: zEnum(recipeDifficultyWeb).nullable().refine((v) => v !== null, 'Difficulty is required'),
+      time: string()
+        .nullable()
+        .refine((v) => v !== null && v.length > 0, 'Time is required')
+        .transform((v) => Number(v))
+        .pipe(number().int('Time must be an integer').min(1, 'Time must be at least 1 minute')),
+      steps: string().min(1, 'Steps are required'),
       ingredients: array(object({
-        name: string().nonempty(),
+        name: string().min(1, 'Ingredient name is required'),
         quantity: number(),
-        unit: string().nonempty()
+        unit: zEnum(ingredientUnitsWeb)
       })).min(1, 'Ingredients are required'),
       coverImage
     }))
   }),
 })
 
-const fieldProps = (state: PublicPathState<unknown>) => ({
-  props: {
-    state: validateStateError(state),
-    invalidFeedback: state.errors[0]
-  }
-})
+const [name, nameAttrs] = defineField('name')
+const [ingredients, ingredientsAttrs] = defineField('ingredients')
+const [steps, stepsAttrs] = defineField('steps')
+const [difficulty, difficultyAttrs] = defineField('difficulty')
+const [time, timeAttrs] = defineField('time')
+const [coverImage, coverImageAttrs] = defineField('coverImage')
 
-const [name, nameAttrs] = defineField('name', fieldProps)
-const [ingredients, ingredientsAttrs] = defineField('ingredients', fieldProps)
-const [steps, stepsAttrs] = defineField('steps', fieldProps)
-const [difficulty, difficultyAttrs] = defineField('difficulty', fieldProps)
-const [time, timeAttrs] = defineField('time', fieldProps)
-const [coverImage, coverImageAttrs] = defineField('coverImage', fieldProps)
-const onUpdateIngredient = (e: readonly string[]) => {
-  e.forEach((el) => {
-    // We can't update the individual elements here because we don't know the most recently updated element
-    // The return is just everything
-    if (ingredients.value.some((ingredient) => ingredient.name === el)) return
-    ingredients.value.push({
-      name: el,
-      quantity: 1,
-      unit: ingredientUnitsWeb[0]
-    })
-  })
-}
 const onUpdateIngredientItem = (e: IngredientWeb) => {
   const index = ingredients.value.findIndex((el) => el.name === e.name)
   if (index === -1) return
@@ -261,9 +277,13 @@ const onUpdateIngredientItem = (e: IngredientWeb) => {
 }
 
 const save = handleSubmit((submitted) => {
+  // `submitted` is validated/typed strictly (e.g. `time` is a `number`), while
+  // `recipe` keeps the looser editable shape (e.g. `time` is a `string`), so we
+  // convert the pieces that differ before merging back.
   recipe.value = {
     ...recipe.value,
-    ...submitted
+    ...submitted,
+    time: submitted.time.toString()
   }
   emit('save')
 })
@@ -303,13 +323,13 @@ onBeforeUnmount(() => {
 })
 
 const previewOpen = ref(false)
-const previewRecipe = computed<ReadRecipeResponse[number]>(
+const previewRecipe = computed<RecipeWeb>(
   () =>
     ({
       createdAt: 0,
       difficulty:
         (difficulty.value as
-          | ReadRecipeResponse[number]['difficulty']
+          | RecipeWeb['difficulty']
           | null) || 'Easy',
       id: '',
       ingredients: ingredients.value,
@@ -330,6 +350,6 @@ const previewRecipe = computed<ReadRecipeResponse[number]>(
                 : ''
         }
       }
-    }) satisfies ReadRecipeResponse[number]
+    }) satisfies RecipeWeb
 )
 </script>

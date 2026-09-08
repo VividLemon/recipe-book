@@ -3,8 +3,7 @@ import { mapRecipeDataToWeb } from '../../utils/mappers'
 import { getAllRecipes, getRecipeTags } from '../../utils/shared'
 
 export default defineEventHandler(async () => {
-  const tagsPromise = getRecipeTags()
-  const [tags, items] = await Promise.all([tagsPromise, getAllRecipes()])
+  const [tags, items] = await Promise.all([getRecipeTags(), getAllRecipes()])
 
   return items
     .filter((el) => el !== null)

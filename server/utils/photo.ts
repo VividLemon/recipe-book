@@ -149,6 +149,7 @@ export const processPhoto = async (
         sharp.resize({ width, height })
       }
     }
+    
     await resizeWithinMaximumBounds()
     const fileName = `/${recipePhotoPrefix}${name}.${type.ext.toLowerCase()}`
     await sharp.toFile(`${dir}${fileName}`)

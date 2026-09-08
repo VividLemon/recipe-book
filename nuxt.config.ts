@@ -19,5 +19,11 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     'nuxt-zod-i18n'
   ],
+  i18n: {
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', name: 'English' },
+    ]
+  },
   css: ['bootstrap/dist/css/bootstrap.min.css']
 })

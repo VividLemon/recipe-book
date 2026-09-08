@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import {
   recipeTagVariantsWeb,
-  type CreateRecipeTagRequest
+  type CreateRecipeTagRequest, type RecipeTagWeb
 } from '../../../types/recipe.ts'
 import {object, string, enum as zodEnum} from "zod";
 
@@ -47,7 +47,7 @@ const showAddModal = defineModel<boolean>({
   required: true
 })
 const props = defineProps<{
-  existingTags: CreateRecipeTagRequest[]
+  existingTags: RecipeTagWeb[]
 }>()
 
 const {
