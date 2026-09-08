@@ -59,6 +59,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/test-utils": "^2.4.11",
     "@vueuse/core": "^14.4.0",
+    "happy-dom": "^20.14.0",
     "playwright-core": "^1.62.1",
     "vitest": "^4.1.11"
   }

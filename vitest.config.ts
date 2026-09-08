@@ -10,8 +10,7 @@ export default defineConfig({
           name: 'unit',
           include: [
             'test/unit/*.{test,spec}.ts',
-            'app/utils/**/*.spec.ts',
-            'app/composables/**/*.spec.ts'
+            'app/utils/**/*.spec.ts'
           ],
           environment: 'node',
         },
@@ -21,6 +20,7 @@ export default defineConfig({
           name: 'nuxt',
           include: [
             'test/nuxt/*.{test,spec}.ts',
+            'app/composables/**/*.spec.ts',
             'app/components/**/*.spec.ts',
             'app/pages/**/*.spec.ts',
             'app/app.spec.ts'
