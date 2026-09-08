@@ -1,4 +1,4 @@
-import { useRecipeStorage } from '../../utils/mongo'
+import { useRecipeStorage } from '../../utils/storage/data'
 import { getRecipeTags } from '../../utils/shared'
 import { recipes } from '../../utils/validation'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
