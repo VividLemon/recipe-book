@@ -1,3 +1,5 @@
+import type { MultiPartData } from './serverTypes'
+
 const filePrefix = 'file_'
 
 export const objToFormData = ({

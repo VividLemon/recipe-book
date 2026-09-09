@@ -6,7 +6,7 @@ import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { stringBooleanToBoolean } from '~/utils/shared'
 import { usePhotoStorage } from './storage/photos'
-import {useAppConfig} from "#imports";
+import { useAppConfig } from '#imports'
 
 // Utils
 export const recipePhotoPrefix = 'recipe_photo_'
@@ -90,7 +90,7 @@ export const processPhoto = async (
   input: Buffer,
   opts: {
     name?: string
-    resizeOpts?: Sharp.ResizeOptions
+    resizeOpts?: ResizeOptions
     maximumDimensions?: Pick<ResizeOptions, 'width' | 'height'>
     preserveAspectRatio?: 'true' | 'false'
   } = {}
@@ -124,23 +124,15 @@ export const processPhoto = async (
       )
       let { width, height } = data
 
-      if (width && width > (opts.maximumDimensions.width ?? Infinity))
-        width = opts.maximumDimensions.width
+      if (width && opts.maximumDimensions.width !== undefined)
+        width = Math.min(width, opts.maximumDimensions.width)
 
-      if (height && height > (opts.maximumDimensions.height ?? Infinity))
-        height = opts.maximumDimensions.height
+      if (height && opts.maximumDimensions.height !== undefined)
+        height = Math.min(height, opts.maximumDimensions.height)
 
       if (preserveAspectRatio && width && height) {
-        if (width >= height) {
-          height = undefined
-        } else {
-          width = undefined
-        }
-      }
-
-      if (width || height) {
         sharp.resize(confineDimensions({ width, height, preserveAspectRatio }))
-      } else {
+      } else if (width || height) {
         sharp.resize({ width, height })
       }
     }
