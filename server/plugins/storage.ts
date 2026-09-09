@@ -20,7 +20,7 @@ export default defineNitroPlugin(async () => {
         // Imported lazily so the (optional) `aws4fetch` peer dependency is
         // only required when the s3 driver is actually selected.
         const { default: s3Driver } = await import('unstorage/drivers/s3')
-        return s3Driver({ base: namespace, ...config.s3 })
+        return s3Driver(config.s3)
       }
       case 'fs':
       default:
@@ -32,4 +32,3 @@ export default defineNitroPlugin(async () => {
     storage.mount(namespace, await driverFor(namespace))
   }
 })
-
