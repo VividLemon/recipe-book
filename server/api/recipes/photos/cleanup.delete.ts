@@ -1,6 +1,7 @@
 import { photoUrlPrefix, recipePhotoPrefix } from '../../../utils/photo'
 import { usePhotoStorage } from '../../../utils/storage/photos'
 import { getAllRecipes } from '../../../utils/shared'
+import { listImageVariantUrls } from '~/utils/photoVariants'
 
 export default defineEventHandler(async (event) => {
   const promise = async () => {
@@ -8,7 +9,8 @@ export default defineEventHandler(async (event) => {
       const recipes = await getAllRecipes()
       const allImages = new Set(
         recipes.flatMap((el) => [
-          ...Object.values(el?.photos?.coverImage ?? {}),
+          ...listImageVariantUrls(el?.photos?.coverImage?.default),
+          ...listImageVariantUrls(el?.photos?.coverImage?.thumbnail),
           ...(el?.photos?.stepsImages ?? [])
         ])
       )

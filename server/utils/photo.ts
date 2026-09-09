@@ -1,10 +1,11 @@
 import type { ResizeOptions } from 'sharp'
 import Sharp from 'sharp'
 import { v7 } from 'uuid'
-import type { PhotosData } from '../../types/recipe'
+import type { ImageFormatVariants, PhotosData } from '../../types/recipe'
 import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { stringBooleanToBoolean } from '~/utils/shared'
+import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
 import { usePhotoStorage } from './storage/photos'
 import { useAppConfig } from '#imports'
 
@@ -27,6 +28,7 @@ const toStorageKey = (nameOrUrl: string) =>
   nameOrUrl.startsWith(photoUrlPrefix)
     ? nameOrUrl.slice(photoUrlPrefix.length)
     : nameOrUrl.replace(/^\/+/, '')
+const toPhotoUrl = (key: string) => `${photoUrlPrefix}${key}`
 /**
  * If preserveAspectRatio is enabled (default), the function will ensure the aspect ratio is maintained with width taking precedence over height.
  */
@@ -55,10 +57,10 @@ const getValidatedPhotoType = async (input: Buffer) => {
   const acceptedImageTypes = appConfig.picture.acceptedImageTypes
 
   const type = await fileTypeFromBuffer(input)
-  if (!type || !acceptedImageTypes.includes(type.ext))
+  if (!type || !acceptedImageTypes.includes(type.mime))
     return {
       error: photoError({
-        message: `Invalid photo type. Expected ${acceptedImageTypes.join(', ')}. Got: ${type}`
+        message: `Invalid photo type. Expected ${acceptedImageTypes.join(', ')}. Got: ${type?.mime ?? 'unknown'}`
       })
     }
   return { type }
@@ -77,12 +79,50 @@ export const deleteRecipePhotos = async (recipeId: string) => {
   await Promise.all([
     ...(item.photos.coverImage
       ? [
-          deletePhoto(item.photos.coverImage.default),
-          deletePhoto(item.photos.coverImage.thumbnail)
+          ...listImageVariantUrls(item.photos.coverImage.default).map(deletePhoto),
+          ...listImageVariantUrls(item.photos.coverImage.thumbnail).map(deletePhoto)
         ]
       : []),
     ...(item.photos.stepsImages ?? []).map(deletePhoto)
   ])
+}
+
+const applyResizeOptions = async ({
+  sharp,
+  opts
+}: {
+  sharp: Sharp.Sharp
+  opts: {
+    resizeOpts?: ResizeOptions
+    maximumDimensions?: Pick<ResizeOptions, 'width' | 'height'>
+    preserveAspectRatio?: 'true' | 'false'
+  }
+}) => {
+  if (opts.resizeOpts)
+    sharp.resize(
+      confineDimensions({
+        ...opts.resizeOpts,
+        preserveAspectRatio: stringBooleanToBoolean(opts.preserveAspectRatio ?? 'true')
+      })
+    )
+
+  if (!opts.maximumDimensions) return
+
+  const data = await sharp.metadata()
+  const preserveAspectRatio = stringBooleanToBoolean(opts.preserveAspectRatio ?? 'true')
+  let { width, height } = data
+
+  if (width && opts.maximumDimensions.width !== undefined)
+    width = Math.min(width, opts.maximumDimensions.width)
+
+  if (height && opts.maximumDimensions.height !== undefined)
+    height = Math.min(height, opts.maximumDimensions.height)
+
+  if (preserveAspectRatio && width && height) {
+    sharp.resize(confineDimensions({ width, height, preserveAspectRatio }))
+  } else if (width || height) {
+    sharp.resize({ width, height })
+  }
 }
 
 // Processing
@@ -103,45 +143,72 @@ export const processPhoto = async (
     if (typeError) return { error: typeError }
 
     const name = opts.name || getDefaultFileName()
-
     const sharp = Sharp(input)
-    if (opts.resizeOpts)
-      sharp.resize(
-        confineDimensions({
-          ...opts.resizeOpts,
-          preserveAspectRatio: stringBooleanToBoolean(
-            opts.preserveAspectRatio ?? 'true'
-          )
-        })
-      )
-
-    const resizeWithinMaximumBounds = async () => {
-      if (!opts.maximumDimensions) return
-
-      const data = await sharp.metadata()
-      const preserveAspectRatio = stringBooleanToBoolean(
-        opts.preserveAspectRatio ?? 'true'
-      )
-      let { width, height } = data
-
-      if (width && opts.maximumDimensions.width !== undefined)
-        width = Math.min(width, opts.maximumDimensions.width)
-
-      if (height && opts.maximumDimensions.height !== undefined)
-        height = Math.min(height, opts.maximumDimensions.height)
-
-      if (preserveAspectRatio && width && height) {
-        sharp.resize(confineDimensions({ width, height, preserveAspectRatio }))
-      } else if (width || height) {
-        sharp.resize({ width, height })
-      }
-    }
-    
-    await resizeWithinMaximumBounds()
-    const key = `${recipePhotoPrefix}${name}.${type.ext.toLowerCase()}`
+    await applyResizeOptions({ sharp, opts })
+    const key = buildStepPhotoKey(name, type.ext)
     const buffer = await sharp.toBuffer()
     await usePhotoStorage().setItemRaw(key, buffer)
-    return { photo: `${photoUrlPrefix}${key}` }
+    return { photo: toPhotoUrl(key) }
+  } catch (e) {
+    console.error(e)
+    return {
+      error: unknownPhotoError
+    }
+  }
+}
+
+const processPhotoVariants = async (
+  input: Buffer,
+  opts: {
+    baseName: string
+    role: 'cover-default' | 'cover-thumbnail'
+    resizeOpts?: ResizeOptions
+  }
+): Promise<
+  | { variants: ImageFormatVariants; error?: ReturnType<typeof photoError> }
+  | { variants?: ImageFormatVariants; error: ReturnType<typeof photoError> }
+> => {
+  try {
+    const { error: typeError, type } = await getValidatedPhotoType(input)
+    if (typeError) return { error: typeError }
+
+    const sharp = Sharp(input)
+    await applyResizeOptions({ sharp, opts })
+
+    const [originalBuffer, webpBuffer, avifBuffer] = await Promise.all([
+      sharp.clone().toBuffer(),
+      sharp.clone().webp().toBuffer(),
+      sharp.clone().avif().toBuffer()
+    ])
+
+    const keys = buildPhotoVariantKeys({
+      baseName: opts.baseName,
+      role: opts.role,
+      originalExt: type.ext
+    })
+
+    try {
+      await Promise.all([
+        usePhotoStorage().setItemRaw(keys.original, originalBuffer),
+        usePhotoStorage().setItemRaw(keys.webp, webpBuffer),
+        usePhotoStorage().setItemRaw(keys.avif, avifBuffer)
+      ])
+    } catch (e) {
+      await Promise.all([
+        deletePhoto(toPhotoUrl(keys.original)).catch(console.error),
+        deletePhoto(toPhotoUrl(keys.webp)).catch(console.error),
+        deletePhoto(toPhotoUrl(keys.avif)).catch(console.error)
+      ])
+      throw e
+    }
+
+    return {
+      variants: {
+        original: toPhotoUrl(keys.original),
+        webp: toPhotoUrl(keys.webp),
+        avif: toPhotoUrl(keys.avif)
+      }
+    }
   } catch (e) {
     console.error(e)
     return {
@@ -158,12 +225,17 @@ export const processPhotoWithThumbnail = async (
   | { photos?: PhotosData['coverImage']; error: ReturnType<typeof photoError> }
 > => {
   const name = opts.name || getDefaultFileName()
-  const smallName = `${name}-small`
+  const defaultBaseName = `${name}-cover-default`
+  const thumbnailBaseName = `${name}-cover-thumbnail`
 
   const [def, thumbnail] = await Promise.all([
-    processPhoto(input, { name }),
-    processPhoto(input, {
-      name: smallName,
+    processPhotoVariants(input, {
+      baseName: defaultBaseName,
+      role: 'cover-default'
+    }),
+    processPhotoVariants(input, {
+      baseName: thumbnailBaseName,
+      role: 'cover-thumbnail',
       resizeOpts: downsizedDimensions
     })
   ])
@@ -174,16 +246,22 @@ export const processPhotoWithThumbnail = async (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     const promises: Promise<void>[] = []
-    if (def.photo)
-      promises.push(deletePhoto(def.photo).catch(console.error))
-    if (thumbnail.photo)
-      promises.push(deletePhoto(thumbnail.photo).catch(console.error))
+    promises.push(
+      ...listImageVariantUrls(def.variants).map((url) =>
+        deletePhoto(url).catch(console.error)
+      )
+    )
+    promises.push(
+      ...listImageVariantUrls(thumbnail.variants).map((url) =>
+        deletePhoto(url).catch(console.error)
+      )
+    )
     await Promise.all(promises)
     return { error: e }
   }
 
   // This shouldn't happen. We checked for errors above.
-  if (!def.photo || !thumbnail.photo) return { error: unknownPhotoError }
+  if (!def.variants || !thumbnail.variants) return { error: unknownPhotoError }
 
-  return { photos: { default: def.photo, thumbnail: thumbnail.photo } }
+  return { photos: { default: def.variants, thumbnail: thumbnail.variants } }
 }

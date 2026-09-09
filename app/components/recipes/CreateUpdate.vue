@@ -154,6 +154,7 @@ import {
   type CreateRecipeRequest,
   type IngredientWeb,
   ingredientUnitsWeb,
+  type ImageFormatVariants,
   type ReadRecipeResponse,
   recipeDifficultyWeb,
   type RecipeDifficultyWeb,
@@ -323,6 +324,11 @@ onBeforeUnmount(() => {
 })
 
 const previewOpen = ref(false)
+const toImageVariants = (value: string): ImageFormatVariants => ({
+  original: value,
+  webp: value,
+  avif: value
+})
 const previewRecipe = computed<RecipeWeb>(
   () =>
     ({
@@ -340,14 +346,14 @@ const previewRecipe = computed<RecipeWeb>(
       updatedAt: 0,
       photos: {
         coverImage: {
-          thumbnail: '',
-          default:
+          thumbnail: toImageVariants(''),
+          default: toImageVariants(
             coverImage.value instanceof File
               ? URL.createObjectURL(coverImage.value)
-              : 'raw' in recipe.value &&
-                  recipe.value.raw?.photos?.coverImage?.default
-                ? recipe.value.raw.photos.coverImage.default
-                : ''
+              : ('raw' in recipe.value
+                  ? recipe.value.raw?.photos?.coverImage?.default.original
+                  : undefined) ?? ''
+          )
         }
       }
     }) satisfies RecipeWeb

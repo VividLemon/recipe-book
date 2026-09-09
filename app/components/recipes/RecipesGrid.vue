@@ -4,10 +4,19 @@
       <BCol v-for="recipe in formattedRecipes" :key="recipe.id" sm="4" lg="4">
         <BCard
           :title="recipe.name"
-          :img-src="recipe.photos?.coverImage?.thumbnail"
           :img-alt="recipe.name"
           img-height="250"
         >
+          <picture v-if="getThumbnailSources(recipe)">
+            <source :srcset="getThumbnailSources(recipe)?.avif" type="image/avif">
+            <source :srcset="getThumbnailSources(recipe)?.webp" type="image/webp">
+            <img
+              class="card-img-top"
+              :src="getThumbnailSources(recipe)?.original"
+              :alt="recipe.name"
+              height="250"
+            >
+          </picture>
           <div>Time: {{ recipe.time }}</div>
 
           <BBadge
@@ -57,6 +66,9 @@ const emit = defineEmits<{
 const isMounted = useMounted() // used by breakpoints
 
 const { toggleFavorite } = useFavoriteRecipe()
+
+const getThumbnailSources = (recipe: ReadRecipeResponse[number]) =>
+  recipe.photos?.coverImage?.thumbnail ?? null
 
 const { active } = useBreakpoints(breakpointsBootstrapV5)
 const activeBreakpoint = active()
