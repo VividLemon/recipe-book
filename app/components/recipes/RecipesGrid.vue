@@ -53,7 +53,6 @@
 import { RecipesFavoriteStarIcon } from '#components'
 import { breakpointsBootstrapV5 } from '@vueuse/core'
 import type { ReadRecipeResponse } from '../../../types/recipe'
-import { normalizeImageVariants } from '../../utils/photoVariants'
 
 const props = defineProps<{
   recipes: ReadRecipeResponse
@@ -69,7 +68,7 @@ const isMounted = useMounted() // used by breakpoints
 const { toggleFavorite } = useFavoriteRecipe()
 
 const getThumbnailSources = (recipe: ReadRecipeResponse[number]) =>
-  normalizeImageVariants(recipe.photos?.coverImage?.thumbnail)
+  recipe.photos?.coverImage?.thumbnail ?? null
 
 const { active } = useBreakpoints(breakpointsBootstrapV5)
 const activeBreakpoint = active()

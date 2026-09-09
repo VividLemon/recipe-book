@@ -7,12 +7,8 @@ import {
 } from './photoVariants'
 
 describe('photoVariants', () => {
-  it('normalizes legacy URL strings into variant objects', () => {
-    expect(normalizeImageVariants('/api/photos/a.jpg')).toEqual({
-      original: '/api/photos/a.jpg',
-      webp: '/api/photos/a.jpg',
-      avif: '/api/photos/a.jpg'
-    })
+  it('returns null for empty image variants', () => {
+    expect(normalizeImageVariants(undefined)).toBeNull()
   })
 
   it('returns all URLs from a variant object', () => {

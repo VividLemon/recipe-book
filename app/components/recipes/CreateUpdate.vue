@@ -154,6 +154,7 @@ import {
   type CreateRecipeRequest,
   type IngredientWeb,
   ingredientUnitsWeb,
+  type ImageFormatVariants,
   type ReadRecipeResponse,
   recipeDifficultyWeb,
   type RecipeDifficultyWeb,
@@ -161,7 +162,6 @@ import {
 } from '../../../types/recipe'
 import AddIcon from '~icons/bi/plus'
 import {object, string, number, array, enum as zEnum} from 'zod'
-import { normalizeImageVariants } from '../../utils/photoVariants'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -324,6 +324,11 @@ onBeforeUnmount(() => {
 })
 
 const previewOpen = ref(false)
+const toImageVariants = (value: string): ImageFormatVariants => ({
+  original: value,
+  webp: value,
+  avif: value
+})
 const previewRecipe = computed<RecipeWeb>(
   () =>
     ({
@@ -341,15 +346,14 @@ const previewRecipe = computed<RecipeWeb>(
       updatedAt: 0,
       photos: {
         coverImage: {
-          thumbnail: '',
-          default:
+          thumbnail: toImageVariants(''),
+          default: toImageVariants(
             coverImage.value instanceof File
               ? URL.createObjectURL(coverImage.value)
-              : (normalizeImageVariants(
-                  'raw' in recipe.value
-                    ? recipe.value.raw?.photos?.coverImage?.default
-                    : undefined
-                )?.original ?? '')
+              : ('raw' in recipe.value
+                  ? recipe.value.raw?.photos?.coverImage?.default.original
+                  : undefined) ?? ''
+          )
         }
       }
     }) satisfies RecipeWeb

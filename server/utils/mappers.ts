@@ -12,7 +12,6 @@ import type {
   RecipeTagWeb,
   RecipeWeb
 } from '../../types/recipe'
-import { normalizeImageVariants } from '~/utils/photoVariants'
 
 // ============================================================================
 // Web → Data
@@ -51,14 +50,7 @@ export const mapIngredientDataToWeb = (
 })
 
 export const mapPhotosDataToWeb = (photos: PhotosData): PhotosWeb => ({
-  coverImage: photos.coverImage
-    ? {
-        default: normalizeImageVariants(photos.coverImage.default) ?? photos.coverImage.default,
-        thumbnail:
-          normalizeImageVariants(photos.coverImage.thumbnail) ??
-          photos.coverImage.thumbnail
-      }
-    : undefined,
+  coverImage: photos.coverImage,
   stepsImages: photos.stepsImages
 })
 

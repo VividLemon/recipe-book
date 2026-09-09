@@ -129,7 +129,6 @@
 import { ingredientUnitsWeb, type ReadRecipeResponse } from '../../../types/recipe'
 import InfoIcon from '~icons/bi/file-earmark-arrow-down'
 import PencilIcon from '~icons/bi/pencil'
-import { normalizeImageVariants } from '../../utils/photoVariants'
 
 const props = defineProps<{
   recipe: ReadRecipeResponse[number] | null
@@ -143,7 +142,7 @@ const open = defineModel<boolean>({
 const { toggleFavorite } = useFavoriteRecipe()
 
 const coverImageSources = computed(() =>
-  normalizeImageVariants(readableRecipe.value?.photos?.coverImage?.default)
+  readableRecipe.value?.photos?.coverImage?.default ?? null
 )
 
 const readableRecipe = computed(() =>

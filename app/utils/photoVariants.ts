@@ -1,23 +1,16 @@
 import type { ImageFormatVariants } from '../../types/recipe'
 
-export type MaybeLegacyImageVariants = ImageFormatVariants | string | null | undefined
+export type MaybeImageVariants = ImageFormatVariants | null | undefined
 export const recipePhotoKeyPrefix = 'recipe_photo_v2'
 
 export const normalizeImageVariants = (
-  value: MaybeLegacyImageVariants
+  value: MaybeImageVariants
 ): ImageFormatVariants | null => {
   if (!value) return null
-  if (typeof value === 'string') {
-    return {
-      original: value,
-      webp: value,
-      avif: value
-    }
-  }
   return value
 }
 
-export const listImageVariantUrls = (value: MaybeLegacyImageVariants): string[] => {
+export const listImageVariantUrls = (value: MaybeImageVariants): string[] => {
   const normalized = normalizeImageVariants(value)
   if (!normalized) return []
   return [normalized.original, normalized.webp, normalized.avif]

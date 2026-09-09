@@ -71,20 +71,16 @@ export interface PhotosData {
   /**
    * One logical image represented in three file formats.
    */
-  // Backward compatible: legacy recipes may still store a single URL string.
-  // New writes should always store the object shape.
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  // (string union intentionally retained for legacy compatibility)
   coverImage?: {
     /**
      * Represents the default image URL.
      */
-    default: ImageFormatVariants | string
+    default: ImageFormatVariants
 
     /**
      * Represents the thumbnail image URL.
      */
-    thumbnail: ImageFormatVariants | string
+    thumbnail: ImageFormatVariants
   }
 
   /**
@@ -105,12 +101,12 @@ export interface PhotosWeb {
     /**
      * Represents the default image URL.
      */
-    default: ImageFormatVariants | string
+    default: ImageFormatVariants
 
     /**
      * Represents the thumbnail image URL.
      */
-    thumbnail: ImageFormatVariants | string
+    thumbnail: ImageFormatVariants
   }
 
   /**
