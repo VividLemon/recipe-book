@@ -58,7 +58,26 @@ bun run build
 
 Locally preview production build:
 
+```
+
+## Testing
+
+Unit and component tests are colocated with the code they cover under `app/`.
+Run them with:
+
 ```bash
+npm run test:unit
+npm run test:nuxt
+```
+
+End-to-end tests live under `test/e2e` and use Playwright:
+
+```bash
+npm run test:e2e
+```
+
+The end-to-end suite currently covers application-shell navigation. API-dependent
+flows can be added once an API mocking engine is available.bash
 # npm
 npm run preview
 
