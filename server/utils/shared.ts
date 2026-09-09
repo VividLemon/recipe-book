@@ -1,5 +1,5 @@
 import type { RecipeData, RecipeTagData } from '../../types/recipe'
-import { useRecipeTagsStorage } from './mongo'
+import { useRecipeTagsStorage } from './storage/data'
 
 export const getRecipeTags = async (): Promise<(RecipeTagData | null)[]> => {
   const storage = useRecipeTagsStorage()
