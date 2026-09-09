@@ -1,4 +1,4 @@
-import { useRecipeTagsStorage } from '../../utils/mongo'
+import { useRecipeTagsStorage } from '../../utils/storage/data'
 import { recipeTags } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {

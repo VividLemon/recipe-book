@@ -2,20 +2,31 @@ import type { ResizeOptions } from 'sharp'
 import Sharp from 'sharp'
 import { v7 } from 'uuid'
 import type { PhotosData } from '../../types/recipe'
-import { noPhotoDirectoryError, photoError, unknownPhotoError } from './errors'
+import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
-import { isAbsolute, resolve } from 'node:path'
-import { unlink } from 'node:fs/promises'
 import { stringBooleanToBoolean } from '~/utils/shared'
+import { usePhotoStorage } from './storage/photos'
 import {useAppConfig} from "#imports";
 
 // Utils
 export const recipePhotoPrefix = 'recipe_photo_'
+// Public route (see server/api/photos/[...name].get.ts) that serves photos
+// back out of `usePhotoStorage()`, regardless of which driver backs it.
+export const photoUrlPrefix = '/api/photos/'
 const downsizedDimensions = {
   width: 200,
   height: 200
 } as const
 const getDefaultFileName = () => v7().replace(/-/g, '')
+/**
+ * The stored value for a photo is the public URL (`/api/photos/<key>`). This
+ * strips that prefix back down to the raw storage key so it can be used with
+ * `usePhotoStorage()`.
+ */
+const toStorageKey = (nameOrUrl: string) =>
+  nameOrUrl.startsWith(photoUrlPrefix)
+    ? nameOrUrl.slice(photoUrlPrefix.length)
+    : nameOrUrl.replace(/^\/+/, '')
 /**
  * If preserveAspectRatio is enabled (default), the function will ensure the aspect ratio is maintained with width taking precedence over height.
  */
@@ -39,20 +50,9 @@ const confineDimensions = ({
 }
 
 // Validation
-export const getValidatedPhotoStorageDir = () => {
-  const appConfig = useAppConfig()
-  const storageDir = appConfig.public.picture.storageDir
-
-  const toAbsolute = (path: string) => resolve(process.cwd(), path)
-
-  const dir = isAbsolute(storageDir) ? storageDir : toAbsolute(storageDir)
-  if (!dir) return { error: noPhotoDirectoryError }
-  return { dir }
-}
-
 const getValidatedPhotoType = async (input: Buffer) => {
   const appConfig = useAppConfig()
-  const acceptedImageTypes = appConfig.public.picture.acceptedImageTypes
+  const acceptedImageTypes = appConfig.picture.acceptedImageTypes
 
   const type = await fileTypeFromBuffer(input)
   if (!type || !acceptedImageTypes.includes(type.ext))
@@ -65,10 +65,8 @@ const getValidatedPhotoType = async (input: Buffer) => {
 }
 
 // Deleting
-export const deletePhoto = async (name: string) => {
-  const { dir, error } = getValidatedPhotoStorageDir()
-  if (error) throw error
-  await unlink(`${dir}/${name}`)
+export const deletePhoto = async (nameOrUrl: string) => {
+  await usePhotoStorage().removeItem(toStorageKey(nameOrUrl))
 }
 
 export const deleteRecipePhotos = async (recipeId: string) => {
@@ -103,9 +101,6 @@ export const processPhoto = async (
   try {
     const { error: typeError, type } = await getValidatedPhotoType(input)
     if (typeError) return { error: typeError }
-
-    const { dir, error: dirError } = getValidatedPhotoStorageDir()
-    if (dirError) return { error: dirError }
 
     const name = opts.name || getDefaultFileName()
 
@@ -151,9 +146,10 @@ export const processPhoto = async (
     }
     
     await resizeWithinMaximumBounds()
-    const fileName = `/${recipePhotoPrefix}${name}.${type.ext.toLowerCase()}`
-    await sharp.toFile(`${dir}${fileName}`)
-    return { photo: fileName }
+    const key = `${recipePhotoPrefix}${name}.${type.ext.toLowerCase()}`
+    const buffer = await sharp.toBuffer()
+    await usePhotoStorage().setItemRaw(key, buffer)
+    return { photo: `${photoUrlPrefix}${key}` }
   } catch (e) {
     console.error(e)
     return {
