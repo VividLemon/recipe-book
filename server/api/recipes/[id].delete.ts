@@ -1,4 +1,4 @@
-import { useRecipeStorage } from '../../utils/mongo'
+import { useRecipeStorage } from '../../utils/storage/data'
 import { deleteRecipePhotos } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 

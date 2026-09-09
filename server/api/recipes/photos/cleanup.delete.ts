@@ -1,14 +1,10 @@
-import {
-  getValidatedPhotoStorageDir,
-  recipePhotoPrefix
-} from '../../../utils/photo'
+import { photoUrlPrefix, recipePhotoPrefix } from '../../../utils/photo'
+import { usePhotoStorage } from '../../../utils/storage/photos'
 import { getAllRecipes } from '../../../utils/shared'
-import { readdir, unlink } from 'fs/promises'
 
 export default defineEventHandler(async (event) => {
   const promise = async () => {
     try {
-      throw new Error('Not implemented')
       const recipes = await getAllRecipes()
       const allImages = new Set(
         recipes.flatMap((el) => [
@@ -16,15 +12,13 @@ export default defineEventHandler(async (event) => {
           ...(el?.photos?.stepsImages ?? [])
         ])
       )
-      const { dir, error } = getValidatedPhotoStorageDir()
-      if (error) throw error
-      const photoDir = dir ?? ''
-      if (!photoDir) return
-      const files = await readdir(photoDir)
+      const storage = usePhotoStorage()
+      const keys = await storage.getKeys()
       await Promise.all(
-        files.map((el) => {
-          if (el.startsWith(recipePhotoPrefix) && !allImages.has(el)) {
-            return unlink(`${photoDir}/${el}`)
+        keys.map((key) => {
+          const url = `${photoUrlPrefix}${key}`
+          if (key.startsWith(recipePhotoPrefix) && !allImages.has(url)) {
+            return storage.removeItem(key)
           }
           return Promise.resolve()
         })

@@ -1,4 +1,4 @@
-import { useRecipeTagsStorage } from '../../utils/mongo'
+import { useRecipeTagsStorage } from '../../utils/storage/data'
 import type { RecipeTagData } from '../../../types/recipe'
 import { mapRecipeTagDataToWeb } from '../../utils/mappers'
 import { recipeTags } from '../../utils/validation'
