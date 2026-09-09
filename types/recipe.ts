@@ -68,16 +68,49 @@ export type IngredientUnitData =
     (typeof ingredientUnitsData)[number]
 
 export interface PhotosData {
+  /**
+   * One logical image represented in three file formats.
+   */
+  // Backward compatible: legacy recipes may still store a single URL string.
+  // New writes should always store the object shape.
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  // (string union intentionally retained for legacy compatibility)
   coverImage?: {
     /**
      * Represents the default image URL.
      */
-    default: string
+    default: ImageFormatVariants | string
 
     /**
      * Represents the thumbnail image URL.
      */
-    thumbnail: string
+    thumbnail: ImageFormatVariants | string
+  }
+
+  /**
+   * Represents the URLs of images that are part of the recipe steps.
+   * Kept as URL strings for now because step HTML stores `<img src="...">`.
+   */
+  stepsImages?: string[]
+}
+
+export interface ImageFormatVariants {
+  original: string
+  webp: string
+  avif: string
+}
+
+export interface PhotosWeb {
+  coverImage?: {
+    /**
+     * Represents the default image URL.
+     */
+    default: ImageFormatVariants | string
+
+    /**
+     * Represents the thumbnail image URL.
+     */
+    thumbnail: ImageFormatVariants | string
   }
 
   /**
@@ -190,15 +223,6 @@ export type RecipeDifficultyWeb =
 
 export type IngredientUnitWeb =
     (typeof ingredientUnitsWeb)[number]
-
-export interface PhotosWeb {
-  coverImage?: {
-    default: string
-    thumbnail: string
-  }
-
-  stepsImages?: string[]
-}
 
 export type RecipeTagVariantWeb = keyof Pick<
     BaseColorVariant,

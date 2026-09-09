@@ -161,6 +161,7 @@ import {
 } from '../../../types/recipe'
 import AddIcon from '~icons/bi/plus'
 import {object, string, number, array, enum as zEnum} from 'zod'
+import { normalizeImageVariants } from '../../utils/photoVariants'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
@@ -344,10 +345,11 @@ const previewRecipe = computed<RecipeWeb>(
           default:
             coverImage.value instanceof File
               ? URL.createObjectURL(coverImage.value)
-              : 'raw' in recipe.value &&
-                  recipe.value.raw?.photos?.coverImage?.default
-                ? recipe.value.raw.photos.coverImage.default
-                : ''
+              : (normalizeImageVariants(
+                  'raw' in recipe.value
+                    ? recipe.value.raw?.photos?.coverImage?.default
+                    : undefined
+                )?.original ?? '')
         }
       }
     }) satisfies RecipeWeb

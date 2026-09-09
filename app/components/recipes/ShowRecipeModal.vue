@@ -37,7 +37,25 @@
     <template v-if="readableRecipe">
       <BRow v-show="!systemSettings.dense.prefersDenseRecipeModal.value" class="mb-2">
         <BCol class="d-flex justify-content-center">
-          <BImg v-bind="imageProps" height="500" />
+          <template v-if="coverImageSources">
+            <picture>
+              <source :srcset="coverImageSources.avif" type="image/avif">
+              <source :srcset="coverImageSources.webp" type="image/webp">
+              <BImg
+                :alt="readableRecipe?.name"
+                :src="coverImageSources.original"
+                height="500"
+              />
+            </picture>
+          </template>
+          <BImg
+            v-else
+            :alt="readableRecipe?.name"
+            blank
+            width="300"
+            blank-color="grey"
+            height="500"
+          />
         </BCol>
       </BRow>
       <BContainer>
@@ -111,6 +129,7 @@
 import { ingredientUnitsWeb, type ReadRecipeResponse } from '../../../types/recipe'
 import InfoIcon from '~icons/bi/file-earmark-arrow-down'
 import PencilIcon from '~icons/bi/pencil'
+import { normalizeImageVariants } from '../../utils/photoVariants'
 
 const props = defineProps<{
   recipe: ReadRecipeResponse[number] | null
@@ -123,18 +142,9 @@ const open = defineModel<boolean>({
 
 const { toggleFavorite } = useFavoriteRecipe()
 
-const imageProps = computed(() => ({
-  alt: readableRecipe.value?.name,
-  ...(readableRecipe.value?.photos?.coverImage?.default
-    ? {
-        src: readableRecipe.value.photos.coverImage.default
-      }
-    : {
-        blank: true,
-        width: '300',
-        blankColor: 'grey'
-      })
-}))
+const coverImageSources = computed(() =>
+  normalizeImageVariants(readableRecipe.value?.photos?.coverImage?.default)
+)
 
 const readableRecipe = computed(() =>
   props.recipe === null ? null : mapRecipeToHumanReadable(props.recipe)
