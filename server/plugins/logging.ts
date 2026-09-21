@@ -23,7 +23,7 @@ export const configureServerLogging = ({
   logging?: LoggingRuntimeConfig
   reporterFactories?: Record<string, ReporterFactory>
 }) => {
-  const defaultReporters = [...logger.options.reporters]
+  const defaultReporters = [...(logger.options.reporters ?? consola.options.reporters)]
   const destinations = parseLoggingDestinations(logging.destinations)
   const reporters = resolveConsolaReporters({
     destinations,
