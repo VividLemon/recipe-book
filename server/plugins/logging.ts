@@ -15,6 +15,7 @@ type LoggerWithReporters = typeof consola & {
 }
 
 const configuredLoggingStateKey = Symbol.for('recipe-book.logging.state')
+const reporterBaselineKey = Symbol.for('recipe-book.logging.reporter-baseline')
 
 const toReporterArray = (
   reporters?: ConsolaReporter | ConsolaReporter[]
@@ -35,34 +36,36 @@ export const configureServerLogging = ({
 }) => {
   const destinations = parseLoggingDestinations(logging.destinations)
   const destinationsKey = destinations.join(',')
-  const defaultReporters = toReporterArray(logger.options?.reporters)
+  const loggerWithState = logger as typeof logger & {
+    [configuredLoggingStateKey]?: {
+      destinationsKey: string
+      reporters: ConsolaReporter[]
+    }
+    [reporterBaselineKey]?: ConsolaReporter[]
+  }
+  const currentReporters = toReporterArray(logger.options?.reporters)
+  const defaultReporters = loggerWithState[reporterBaselineKey]
+    ? [...loggerWithState[reporterBaselineKey]]
+    : currentReporters
+
+  loggerWithState[reporterBaselineKey] = [...defaultReporters]
   const reporters = resolveConsolaReporters({
     destinations,
     defaultReporters,
     reporterFactories
   })
 
-  const configurationState = (logger as typeof logger & {
-    [configuredLoggingStateKey]?: {
-      destinationsKey: string
-      reporters: ConsolaReporter[]
-    }
-  })[configuredLoggingStateKey]
+  const configurationState = loggerWithState[configuredLoggingStateKey]
 
-  const hasSameReporters = defaultReporters.length === reporters.length
-    && defaultReporters.every((reporter, index) => reporter === reporters[index])
+  const hasSameReporters = currentReporters.length === reporters.length
+    && currentReporters.every((reporter, index) => reporter === reporters[index])
   const alreadyConfigured = configurationState?.destinationsKey === destinationsKey
-    && configurationState.reporters.length === defaultReporters.length
-    && configurationState.reporters.every((reporter, index) => reporter === defaultReporters[index])
+    && configurationState.reporters.length === currentReporters.length
+    && configurationState.reporters.every((reporter, index) => reporter === currentReporters[index])
 
   if (!alreadyConfigured || !hasSameReporters) {
     logger.setReporters(reporters)
-    ;(logger as typeof logger & {
-      [configuredLoggingStateKey]: {
-        destinationsKey: string
-        reporters: ConsolaReporter[]
-      }
-    })[configuredLoggingStateKey] = {
+    loggerWithState[configuredLoggingStateKey] = {
       destinationsKey,
       reporters: [...reporters]
     }

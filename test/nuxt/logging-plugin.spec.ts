@@ -31,6 +31,8 @@ describe('logging Nitro plugin', () => {
     useRuntimeConfig.mockReset()
     mockedConsola.options.reporters = []
     mockedConsola.setReporters.mockReset()
+    delete (mockedConsola as Record<symbol, unknown>)[Symbol.for('recipe-book.logging.state')]
+    delete (mockedConsola as Record<symbol, unknown>)[Symbol.for('recipe-book.logging.reporter-baseline')]
   })
 
   it('configures stdout reporters from runtime config at startup', async () => {
