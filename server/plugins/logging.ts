@@ -60,8 +60,8 @@ export const configureServerLogging = ({
   const hasSameReporters = currentReporters.length === reporters.length
     && currentReporters.every((reporter, index) => reporter === reporters[index])
   const alreadyConfigured = configurationState?.destinationsKey === destinationsKey
-    && configurationState.reporters.length === currentReporters.length
-    && configurationState.reporters.every((reporter, index) => reporter === currentReporters[index])
+    && configurationState.reporters.length === reporters.length
+    && configurationState.reporters.every((reporter, index) => reporter === reporters[index])
 
   if (!alreadyConfigured || !hasSameReporters) {
     logger.setReporters(reporters)
