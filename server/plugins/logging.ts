@@ -14,7 +14,15 @@ type LoggerWithReporters = typeof consola & {
   setReporters: (reporters: ConsolaReporter | ConsolaReporter[]) => unknown
 }
 
-let hasConfiguredGlobalServerLogging = false
+const configuredLoggingStateKey = Symbol.for('recipe-book.logging.state')
+
+const toReporterArray = (
+  reporters?: ConsolaReporter | ConsolaReporter[]
+): ConsolaReporter[] => Array.isArray(reporters)
+  ? [...reporters]
+  : reporters
+    ? [reporters]
+    : []
 
 export const configureServerLogging = ({
   logger = consola as LoggerWithReporters,
@@ -25,30 +33,47 @@ export const configureServerLogging = ({
   logging?: LoggingRuntimeConfig
   reporterFactories?: Record<string, ReporterFactory>
 }) => {
-  const currentReporters = logger.options?.reporters
-  const defaultReporters = Array.isArray(currentReporters)
-    ? [...currentReporters]
-    : currentReporters
-      ? [currentReporters]
-      : []
   const destinations = parseLoggingDestinations(logging.destinations)
+  const destinationsKey = destinations.join(',')
+  const defaultReporters = toReporterArray(logger.options?.reporters)
   const reporters = resolveConsolaReporters({
     destinations,
     defaultReporters,
     reporterFactories
   })
 
-  logger.setReporters(reporters)
+  const configurationState = (logger as typeof logger & {
+    [configuredLoggingStateKey]?: {
+      destinationsKey: string
+      reporters: ConsolaReporter[]
+    }
+  })[configuredLoggingStateKey]
+
+  const hasSameReporters = defaultReporters.length === reporters.length
+    && defaultReporters.every((reporter, index) => reporter === reporters[index])
+  const alreadyConfigured = configurationState?.destinationsKey === destinationsKey
+    && configurationState.reporters.length === defaultReporters.length
+    && configurationState.reporters.every((reporter, index) => reporter === defaultReporters[index])
+
+  if (!alreadyConfigured || !hasSameReporters) {
+    logger.setReporters(reporters)
+    ;(logger as typeof logger & {
+      [configuredLoggingStateKey]: {
+        destinationsKey: string
+        reporters: ConsolaReporter[]
+      }
+    })[configuredLoggingStateKey] = {
+      destinationsKey,
+      reporters: [...reporters]
+    }
+  }
 
   return { destinations, reporters }
 }
 
 export default defineNitroPlugin(() => {
-  if (hasConfiguredGlobalServerLogging) return
-
   const config = useRuntimeConfig()
   configureServerLogging({
     logging: config.logging
   })
-  hasConfiguredGlobalServerLogging = true
 })
