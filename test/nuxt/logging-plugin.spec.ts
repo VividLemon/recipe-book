@@ -48,7 +48,10 @@ describe('logging Nitro plugin', () => {
 
     expect(useRuntimeConfig).toHaveBeenCalledTimes(1)
     expect(mockedConsola.setReporters).toHaveBeenCalledTimes(1)
-    expect(mockedConsola.setReporters).toHaveBeenCalledWith(defaultReporter)
+    const configured = mockedConsola.setReporters.mock.calls[0]?.[0]
+    expect(Array.isArray(configured) ? configured : [configured]).toEqual([
+      defaultReporter
+    ])
   })
 
   it('preserves multiple default stdout reporters at startup', async () => {
@@ -66,6 +69,26 @@ describe('logging Nitro plugin', () => {
 
     expect(mockedConsola.setReporters).toHaveBeenCalledTimes(1)
     expect(mockedConsola.setReporters).toHaveBeenCalledWith(defaultReporters)
+  })
+
+  it('passes a single reporter when only one reporter resolves', async () => {
+    const { configureServerLogging } = await import('../../server/plugins/logging')
+    const defaultReporter = createReporter()
+    const setReporters = vi.fn()
+
+    configureServerLogging({
+      logger: {
+        options: {
+          reporters: [defaultReporter]
+        },
+        setReporters
+      } as never,
+      logging: {
+        destinations: 'stdout'
+      }
+    })
+
+    expect(setReporters).toHaveBeenCalledWith(defaultReporter)
   })
 
   it('fails fast for invalid startup destinations', async () => {
