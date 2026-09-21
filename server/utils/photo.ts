@@ -6,6 +6,7 @@ import { fileTypeFromBuffer } from 'file-type'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
 import { usePhotoStorage } from './storage/photos'
 import { useAppConfig } from '#imports'
+import { consola } from 'consola'
 
 // Utils
 export const recipePhotoPrefix = 'recipe_photo_'
@@ -158,7 +159,7 @@ export const processPhoto = async (
     await usePhotoStorage().setItemRaw(key, buffer)
     return { photo: toPhotoUrl(key) }
   } catch (e) {
-    console.error(e)
+    consola.error(e)
     return {
       error: unknownPhotoError
     }
@@ -209,7 +210,7 @@ const processPhotoVariants = async (
         Object.values(mappedKeys).map(({name}) => deletePhoto(toPhotoUrl(name)))
       )
       const failures = result.filter((r) => r.status === 'rejected')
-      if(failures.length > 0) console.error('failed to clean up photo variants:', failures)
+      if (failures.length > 0) consola.error('failed to clean up photo variants:', failures)
 
       throw e
     }
@@ -222,7 +223,7 @@ const processPhotoVariants = async (
       }
     }
   } catch (e) {
-    console.error(e)
+    consola.error(e)
     return {
       error: unknownPhotoError
     }
@@ -260,12 +261,16 @@ export const processPhotoWithThumbnail = async (
     const promises: Promise<void>[] = []
     promises.push(
       ...listImageVariantUrls(def.variants).map((url) =>
-        deletePhoto(url).catch(console.error)
+        deletePhoto(url).catch((e) => {
+          consola.error('Failed to clean up cover image variant:', e)
+        })
       )
     )
     promises.push(
       ...listImageVariantUrls(thumbnail.variants).map((url) =>
-        deletePhoto(url).catch(console.error)
+        deletePhoto(url).catch((e) => {
+          consola.error('Failed to clean up thumbnail image variant:', e)
+        })
       )
     )
     await Promise.all(promises)

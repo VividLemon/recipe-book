@@ -33,6 +33,14 @@ export default defineNuxtConfig({
     // per-environment via the `NUXT_STORAGE_DRIVER` env var. Supported
     // values: 'fs' | 'memory' | 's3'.
     storageDriver: 'fs',
+    // Comma-separated list of server-side Consola destinations configured by
+    // `server/plugins/logging.ts`. Overridable at runtime via the
+    // `NUXT_LOGGING_DESTINATIONS` env var. Supported values currently include
+    // only 'stdout', but the format allows future combinations such as
+    // 'stdout,datadog' without rebuilding.
+    logging: {
+      destinations: 'stdout'
+    },
     // Base directory used by the `fs` driver, one subdirectory per namespace.
     storageDir: './.data',
     // Used by the `s3` driver for the `photos` namespace (e.g. to drop in an
@@ -55,4 +63,3 @@ export default defineNuxtConfig({
     }
   }
 })
-
