@@ -1,4 +1,4 @@
-import { defineNitroPlugin, useRuntimeConfig } from '#imports'
+import { defineNitroPlugin, useRuntimeConfig } from 'nitropack/runtime'
 import { consola, type ConsolaReporter } from 'consola'
 import {
   parseLoggingDestinations,

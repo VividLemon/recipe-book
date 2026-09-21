@@ -11,10 +11,9 @@ const { mockedConsola } = vi.hoisted(() => ({
 }))
 
 const useRuntimeConfig = vi.fn()
-const defineNitroPlugin = <T>(plugin: T) => plugin
 
-vi.mock('#imports', () => ({
-  defineNitroPlugin,
+vi.mock('nitropack/runtime', () => ({
+  defineNitroPlugin: <T>(plugin: T) => plugin,
   useRuntimeConfig
 }))
 
