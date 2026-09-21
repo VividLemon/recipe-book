@@ -68,7 +68,7 @@ describe('logging Nitro plugin', () => {
     plugin({} as never)
 
     expect(mockedConsola.setReporters).toHaveBeenCalledTimes(1)
-    expect(mockedConsola.setReporters).toHaveBeenCalledWith(defaultReporters)
+    expect(mockedConsola.setReporters.mock.calls[0]?.[0]).toEqual(defaultReporters)
   })
 
   it('passes a single reporter when only one reporter resolves', async () => {
