@@ -9,7 +9,7 @@ import {
 
 type LoggerWithReporters = typeof consola & {
   options?: {
-    reporters?: ConsolaReporter[]
+    reporters?: ConsolaReporter | ConsolaReporter[]
   }
   setReporters: (reporters: ConsolaReporter | ConsolaReporter[]) => unknown
 }
@@ -23,7 +23,12 @@ export const configureServerLogging = ({
   logging?: LoggingRuntimeConfig
   reporterFactories?: Record<string, ReporterFactory>
 }) => {
-  const defaultReporters = [...(logger.options?.reporters ?? [])]
+  const currentReporters = logger.options?.reporters
+  const defaultReporters = Array.isArray(currentReporters)
+    ? [...currentReporters]
+    : currentReporters
+      ? [currentReporters]
+      : []
   const destinations = parseLoggingDestinations(logging.destinations)
   const reporters = resolveConsolaReporters({
     destinations,
