@@ -17,12 +17,11 @@ export default defineEventHandler(async (event) => {
       const storage = usePhotoStorage()
       const keys = await storage.getKeys()
       await Promise.all(
-        keys.map((key) => {
+        keys.map(async (key) => {
           const url = `${photoUrlPrefix}${key}`
           if (key.startsWith(recipePhotoPrefix) && !allImages.has(url)) {
-            return storage.removeItem(key)
+            await storage.removeItem(key)
           }
-          return Promise.resolve()
         })
       )
     } catch (e) {

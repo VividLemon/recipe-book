@@ -1,6 +1,6 @@
 import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
-import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
+import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
 import { processPhoto } from '../../../utils/photo'
 import { recipePhotos } from '../../../utils/validation'
 
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const { photo, error } = await processPhoto(file, {
     maximumDimensions: maximumRecipeStepsPhotoDimensions,
-    preserveAspectRatio: query?.preserveAspectRatio
+    preserveAspectRatio: query?.preserveAspectRatio ? stringBooleanToBoolean(query?.preserveAspectRatio) : undefined
   })
   if (error || !photo) throw error
 

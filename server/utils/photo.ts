@@ -1,10 +1,8 @@
-import type { ResizeOptions } from 'sharp'
-import Sharp from 'sharp'
+import Sharp, {type Sharp as SharpType, type ResizeOptions} from 'sharp'
 import { v7 } from 'uuid'
-import type { ImageFormatVariants, PhotosData } from '../../types/recipe'
+import type { ImageFormatVariants, PhotosData, RecipeData } from '../../types/recipe'
 import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
-import { stringBooleanToBoolean } from '~/utils/shared'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
 import { usePhotoStorage } from './storage/photos'
 import { useAppConfig } from '#imports'
@@ -67,49 +65,59 @@ const getValidatedPhotoType = async (input: Buffer) => {
 }
 
 // Deleting
-export const deletePhoto = async (nameOrUrl: string) => {
-  await usePhotoStorage().removeItem(toStorageKey(nameOrUrl))
+export const deletePhoto = (nameOrUrl: string) => usePhotoStorage().removeItem(toStorageKey(nameOrUrl))
+
+const listRecipePhotoUrls = (recipe: Pick<RecipeData, 'photos'>): string[] => [
+  ...listImageVariantUrls(recipe.photos?.coverImage?.default),
+  ...listImageVariantUrls(recipe.photos?.coverImage?.thumbnail),
+  ...(recipe.photos?.stepsImages ?? [])
+]
+
+export const listRemovedRecipePhotoUrls = ({
+  previous,
+  next
+}: {
+  previous: Pick<RecipeData, 'photos'>
+  next: Pick<RecipeData, 'photos'>
+}) => {
+  const nextUrls = new Set(listRecipePhotoUrls(next))
+  return listRecipePhotoUrls(previous).filter((url) => !nextUrls.has(url))
 }
+
+export const deletePhotos = async (photos: string[]) =>
+  Promise.all(photos.map((photo) => deletePhoto(photo)))
 
 export const deleteRecipePhotos = async (recipeId: string) => {
   const storage = useRecipeStorage()
   const item = await storage.getItem(recipeId)
   if (!item) throw notFoundError
   if (!item.photos) return
-  await Promise.all([
-    ...(item.photos.coverImage
-      ? [
-          ...listImageVariantUrls(item.photos.coverImage.default).map(deletePhoto),
-          ...listImageVariantUrls(item.photos.coverImage.thumbnail).map(deletePhoto)
-        ]
-      : []),
-    ...(item.photos.stepsImages ?? []).map(deletePhoto)
-  ])
+  await deletePhotos(listRecipePhotoUrls(item))
 }
 
 const applyResizeOptions = async ({
   sharp,
   opts
 }: {
-  sharp: Sharp.Sharp
+  sharp: SharpType
   opts: {
     resizeOpts?: ResizeOptions
     maximumDimensions?: Pick<ResizeOptions, 'width' | 'height'>
-    preserveAspectRatio?: 'true' | 'false'
+    preserveAspectRatio?: boolean
   }
 }) => {
+  const preserveAspectRatio = opts.preserveAspectRatio ?? true
   if (opts.resizeOpts)
     sharp.resize(
       confineDimensions({
         ...opts.resizeOpts,
-        preserveAspectRatio: stringBooleanToBoolean(opts.preserveAspectRatio ?? 'true')
+        preserveAspectRatio
       })
     )
 
   if (!opts.maximumDimensions) return
 
   const data = await sharp.metadata()
-  const preserveAspectRatio = stringBooleanToBoolean(opts.preserveAspectRatio ?? 'true')
   let { width, height } = data
 
   if (width && opts.maximumDimensions.width !== undefined)
@@ -132,7 +140,7 @@ export const processPhoto = async (
     name?: string
     resizeOpts?: ResizeOptions
     maximumDimensions?: Pick<ResizeOptions, 'width' | 'height'>
-    preserveAspectRatio?: 'true' | 'false'
+    preserveAspectRatio?: boolean
   } = {}
 ): Promise<
   | { photo: string; error?: ReturnType<typeof photoError> }
@@ -186,19 +194,23 @@ const processPhotoVariants = async (
       role: opts.role,
       originalExt: type.ext
     })
+    const mappedKeys = {
+      avif: { name: keys.avif, buffer: avifBuffer },
+      webp: { name: keys.webp, buffer: webpBuffer },
+      original: { name: keys.original, buffer: originalBuffer }
+    } as Record<keyof ImageFormatVariants, {name: string; buffer: Buffer}>
 
     try {
-      await Promise.all([
-        usePhotoStorage().setItemRaw(keys.original, originalBuffer),
-        usePhotoStorage().setItemRaw(keys.webp, webpBuffer),
-        usePhotoStorage().setItemRaw(keys.avif, avifBuffer)
-      ])
+      await Promise.all(
+        Object.values(mappedKeys).map(({ name, buffer }) => usePhotoStorage().setItemRaw(name, buffer))
+      )
     } catch (e) {
-      await Promise.all([
-        deletePhoto(toPhotoUrl(keys.original)).catch(console.error),
-        deletePhoto(toPhotoUrl(keys.webp)).catch(console.error),
-        deletePhoto(toPhotoUrl(keys.avif)).catch(console.error)
-      ])
+      const result = await Promise.allSettled(
+        Object.values(mappedKeys).map(({name}) => deletePhoto(toPhotoUrl(name)))
+      )
+      const failures = result.filter((r) => r.status === 'rejected')
+      if(failures.length > 0) console.error('failed to clean up photo variants:', failures)
+
       throw e
     }
 

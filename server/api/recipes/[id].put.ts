@@ -3,7 +3,7 @@ import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../util
 import { deserializeFormData } from '~/utils/serialization'
 import { notFoundError } from '../../utils/errors'
 import { useRecipeStorage } from '../../utils/storage/data'
-import { processPhotoWithThumbnail } from '../../utils/photo'
+import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 import sanitizeHtml from 'sanitize-html'
 
@@ -45,15 +45,16 @@ export default defineEventHandler(async (event) => {
     ...previousValuesNotToChange
   }
 
-  const cleanupPreviousPhotos = async () => {
-    try {
-      throw new Error('Not implemented')
-      // TODO: Implement this function
-    } catch (e) {
-      console.error('Cleanup previous photos', e)
-    }
-  }
+  // Remove any photos that are no longer used in the updated recipe
+  event.waitUntil(
+    deletePhotos(listRemovedRecipePhotoUrls({
+      previous,
+      next: recipe
+    })).catch((e) => {
+      console.error('Cleanup previous photos exited with error:', e)
+    })
+  )
 
-  await Promise.all([cleanupPreviousPhotos(), storage.setItem(id, recipe)])
+  await storage.setItem(id, recipe)
   setResponseStatus(event, 204)
 })

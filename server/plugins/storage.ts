@@ -1,5 +1,6 @@
 import fsDriver from 'unstorage/drivers/fs'
 import memoryDriver from 'unstorage/drivers/memory'
+import s3Driver from 'unstorage/drivers/s3'
 
 // Namespaces that are mounted with the environment-selected driver below.
 // Both `server/utils/storage/data.ts` and `server/utils/storage/photos.ts`
@@ -16,19 +17,17 @@ export default defineNitroPlugin(async () => {
     switch (config.storageDriver) {
       case 'memory':
         return memoryDriver()
-      case 's3': {
-        // Imported lazily so the (optional) `aws4fetch` peer dependency is
-        // only required when the s3 driver is actually selected.
-        const { default: s3Driver } = await import('unstorage/drivers/s3')
+      case 's3':
         return s3Driver(config.s3)
-      }
       case 'fs':
       default:
         return fsDriver({ base: `${config.storageDir}/${namespace}` })
     }
   }
 
-  for (const namespace of storageNamespaces) {
-    storage.mount(namespace, await driverFor(namespace))
-  }
+  await Promise.all(
+    storageNamespaces.map(async (namespace) => {
+      storage.mount(namespace, await driverFor(namespace))
+    })
+  )
 })
