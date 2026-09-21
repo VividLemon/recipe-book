@@ -36,7 +36,7 @@ export const configureServerLogging = ({
     reporterFactories
   })
 
-  logger.setReporters(reporters.length === 1 ? reporters[0] : reporters)
+  logger.setReporters(reporters)
 
   return { destinations, reporters }
 }
