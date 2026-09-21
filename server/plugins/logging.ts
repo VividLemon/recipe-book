@@ -8,8 +8,8 @@ import {
 } from '../utils/logging/config'
 
 type LoggerWithReporters = typeof consola & {
-  options: {
-    reporters: ConsolaReporter[]
+  options?: {
+    reporters?: ConsolaReporter[]
   }
   setReporters: (reporters: ConsolaReporter | ConsolaReporter[]) => unknown
 }
@@ -23,7 +23,7 @@ export const configureServerLogging = ({
   logging?: LoggingRuntimeConfig
   reporterFactories?: Record<string, ReporterFactory>
 }) => {
-  const defaultReporters = [...(logger.options.reporters ?? consola.options.reporters)]
+  const defaultReporters = [...(logger.options?.reporters ?? consola.options.reporters)]
   const destinations = parseLoggingDestinations(logging.destinations)
   const reporters = resolveConsolaReporters({
     destinations,
