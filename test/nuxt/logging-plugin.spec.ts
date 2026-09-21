@@ -71,6 +71,22 @@ describe('logging Nitro plugin', () => {
     expect(mockedConsola.setReporters.mock.calls[0]?.[0]).toEqual(defaultReporters)
   })
 
+  it('only configures reporters once per process', async () => {
+    useRuntimeConfig.mockReturnValue({
+      logging: {
+        destinations: 'stdout'
+      }
+    })
+
+    const { default: plugin } = await import('../../server/plugins/logging')
+    mockedConsola.options.reporters = [createReporter()]
+
+    plugin({} as never)
+    plugin({} as never)
+
+    expect(mockedConsola.setReporters).toHaveBeenCalledTimes(1)
+  })
+
   it('fails fast for invalid startup destinations', async () => {
     useRuntimeConfig.mockReturnValue({
       logging: {

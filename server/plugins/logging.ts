@@ -14,6 +14,8 @@ type LoggerWithReporters = typeof consola & {
   setReporters: (reporters: ConsolaReporter | ConsolaReporter[]) => unknown
 }
 
+let hasConfiguredGlobalServerLogging = false
+
 export const configureServerLogging = ({
   logger = consola as LoggerWithReporters,
   logging = {},
@@ -42,8 +44,11 @@ export const configureServerLogging = ({
 }
 
 export default defineNitroPlugin(() => {
+  if (hasConfiguredGlobalServerLogging) return
+
   const config = useRuntimeConfig()
   configureServerLogging({
     logging: config.logging
   })
+  hasConfiguredGlobalServerLogging = true
 })
