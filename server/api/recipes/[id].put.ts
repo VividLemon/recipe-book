@@ -2,10 +2,11 @@ import type { RecipeData } from '../../../types/recipe'
 import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
 import { notFoundError } from '../../utils/errors'
-import { useRecipeStorage } from '../../utils/storage/data'
+import { useRecipeStorage } from '../../utils/storage'
 import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 import sanitizeHtml from 'sanitize-html'
+import { consola } from 'consola'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeStorage()
@@ -51,7 +52,7 @@ export default defineEventHandler(async (event) => {
       previous,
       next: recipe
     })).catch((e) => {
-      console.error('Cleanup previous photos exited with error:', e)
+      consola.error('Cleanup previous photos exited with error:', e)
     })
   )
 

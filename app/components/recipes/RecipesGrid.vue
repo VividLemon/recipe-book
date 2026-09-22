@@ -7,12 +7,12 @@
           :img-alt="recipe.name"
           img-height="250"
         >
-          <picture v-if="getThumbnailSources(recipe)">
-            <source :srcset="getThumbnailSources(recipe)?.avif" type="image/avif">
-            <source :srcset="getThumbnailSources(recipe)?.webp" type="image/webp">
+          <picture v-if="recipe.photos?.coverImage?.thumbnail">
+            <source :srcset="recipe.photos.coverImage.thumbnail.avif" type="image/avif">
+            <source :srcset="recipe.photos.coverImage.thumbnail.webp" type="image/webp">
             <img
               class="card-img-top"
-              :src="getThumbnailSources(recipe)?.original"
+              :src="recipe.photos.coverImage.thumbnail.original"
               :alt="recipe.name"
               height="250"
             >
@@ -67,9 +67,6 @@ const isMounted = useMounted() // used by breakpoints
 
 const { toggleFavorite } = useFavoriteRecipe()
 
-const getThumbnailSources = (recipe: ReadRecipeResponse[number]) =>
-  recipe.photos?.coverImage?.thumbnail ?? null
-
 const { active } = useBreakpoints(breakpointsBootstrapV5)
 const activeBreakpoint = active()
 const autoBreakpoints = {
@@ -86,21 +83,5 @@ const chunkSize = computed(() => {
   if (typeof props.perRow === 'number') return props.perRow
   return autoBreakpoints[activeBreakpoint.value] || 1
 })
-const formattedRecipes = useFormattedRecipe(() => [
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes,
-  ...props.recipes
-])
+const formattedRecipes = useFormattedRecipe(() => Array(10).fill(props.recipes).flat())
 </script>

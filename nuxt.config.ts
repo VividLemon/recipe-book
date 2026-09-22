@@ -28,15 +28,11 @@ export default defineNuxtConfig({
   css: ['bootstrap/dist/css/bootstrap.min.css'],
 
   runtimeConfig: {
-    // Which unstorage driver `server/plugins/storage.ts` mounts for the
-    // `recipes`, `recipeTags` and `photos` storage namespaces. Overridable
-    // per-environment via the `NUXT_STORAGE_DRIVER` env var. Supported
-    // values: 'fs' | 'memory' | 's3'.
     storageDriver: 'fs',
-    // Base directory used by the `fs` driver, one subdirectory per namespace.
+    logging: {
+      stdout: {}
+    },
     storageDir: './.data',
-    // Used by the `s3` driver for the `photos` namespace (e.g. to drop in an
-    // S3 bucket in a real deployment). Overridable via `NUXT_S3_*` env vars.
     s3: {
       accessKeyId: '',
       secretAccessKey: '',
@@ -55,4 +51,3 @@ export default defineNuxtConfig({
     }
   }
 })
-

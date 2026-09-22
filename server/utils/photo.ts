@@ -4,13 +4,12 @@ import type { ImageFormatVariants, PhotosData, RecipeData } from '../../types/re
 import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
-import { usePhotoStorage } from './storage/photos'
+import { usePhotoStorage } from './storage'
 import { useAppConfig } from '#imports'
+import { consola } from 'consola'
 
 // Utils
 export const recipePhotoPrefix = 'recipe_photo_'
-// Public route (see server/api/photos/[...name].get.ts) that serves photos
-// back out of `usePhotoStorage()`, regardless of which driver backs it.
 export const photoUrlPrefix = '/api/photos/'
 const downsizedDimensions = {
   width: 200,
@@ -158,7 +157,7 @@ export const processPhoto = async (
     await usePhotoStorage().setItemRaw(key, buffer)
     return { photo: toPhotoUrl(key) }
   } catch (e) {
-    console.error(e)
+    consola.error(e)
     return {
       error: unknownPhotoError
     }
@@ -200,18 +199,19 @@ const processPhotoVariants = async (
       original: { name: keys.original, buffer: originalBuffer }
     } as Record<keyof ImageFormatVariants, {name: string; buffer: Buffer}>
 
-    try {
-      await Promise.all(
-        Object.values(mappedKeys).map(({ name, buffer }) => usePhotoStorage().setItemRaw(name, buffer))
+    const writeResults = await Promise.allSettled(
+      Object.values(mappedKeys).map(({ name, buffer }) => usePhotoStorage().setItemRaw(name, buffer))
+    )
+    const writeFailure = writeResults.find((r) => r.status === 'rejected')
+    if (writeFailure) {
+      const cleanupResults = await Promise.allSettled(
+        Object.values(mappedKeys).map(({ name }) => deletePhoto(toPhotoUrl(name)))
       )
-    } catch (e) {
-      const result = await Promise.allSettled(
-        Object.values(mappedKeys).map(({name}) => deletePhoto(toPhotoUrl(name)))
-      )
-      const failures = result.filter((r) => r.status === 'rejected')
-      if(failures.length > 0) console.error('failed to clean up photo variants:', failures)
+      const cleanupFailures = cleanupResults.filter((r) => r.status === 'rejected')
+      if (cleanupFailures.length > 0) consola.error('failed to clean up photo variants:', cleanupFailures)
 
-      throw e
+      consola.error(writeFailure.reason)
+      return { error: unknownPhotoError }
     }
 
     return {
@@ -222,7 +222,7 @@ const processPhotoVariants = async (
       }
     }
   } catch (e) {
-    console.error(e)
+    consola.error(e)
     return {
       error: unknownPhotoError
     }
@@ -252,24 +252,24 @@ export const processPhotoWithThumbnail = async (
     })
   ])
 
-  try {
-    if (def.error) throw def.error
-    if (thumbnail.error) throw thumbnail.error
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
+  if (def.error || thumbnail.error) {
     const promises: Promise<void>[] = []
     promises.push(
       ...listImageVariantUrls(def.variants).map((url) =>
-        deletePhoto(url).catch(console.error)
+        deletePhoto(url).catch((e) => {
+          consola.error('Failed to clean up cover image variant:', e)
+        })
       )
     )
     promises.push(
       ...listImageVariantUrls(thumbnail.variants).map((url) =>
-        deletePhoto(url).catch(console.error)
+        deletePhoto(url).catch((e) => {
+          consola.error('Failed to clean up thumbnail image variant:', e)
+        })
       )
     )
     await Promise.all(promises)
-    return { error: e }
+    return { error: (def.error ?? thumbnail.error)! }
   }
 
   // This shouldn't happen. We checked for errors above.

@@ -1,7 +1,8 @@
 import { photoUrlPrefix, recipePhotoPrefix } from '../../../utils/photo'
-import { usePhotoStorage } from '../../../utils/storage/photos'
+import { usePhotoStorage } from '../../../utils/storage'
 import { getAllRecipes } from '../../../utils/shared'
 import { listImageVariantUrls } from '~/utils/photoVariants'
+import { consola } from 'consola'
 
 export default defineEventHandler(async (event) => {
   const promise = async () => {
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
         })
       )
     } catch (e) {
-      console.error('Error cleaning up photos:', e)
+      consola.error('Error cleaning up photos:', e)
     }
   }
   event.waitUntil(promise())
