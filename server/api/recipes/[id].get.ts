@@ -1,4 +1,4 @@
-import { useRecipeStorage } from '../../utils/storage/data'
+import { useRecipeStorage } from '../../utils/storage'
 import { getRecipeTags } from '../../utils/shared'
 import { recipes } from '../../utils/validation'
 import { mapRecipeDataToWeb } from '../../utils/mappers'

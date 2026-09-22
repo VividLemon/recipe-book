@@ -28,23 +28,11 @@ export default defineNuxtConfig({
   css: ['bootstrap/dist/css/bootstrap.min.css'],
 
   runtimeConfig: {
-    // Which unstorage driver `server/plugins/storage.ts` mounts for the
-    // `recipes`, `recipeTags` and `photos` storage namespaces. Overridable
-    // per-environment via the `NUXT_STORAGE_DRIVER` env var. Supported
-    // values: 'fs' | 'memory' | 's3'.
     storageDriver: 'fs',
-    // Comma-separated list of server-side Consola destinations configured by
-    // `server/plugins/logging.ts`. Overridable at runtime via the
-    // `NUXT_LOGGING_DESTINATIONS` env var. Supported values currently include
-    // only 'stdout', but the format allows future combinations such as
-    // 'stdout,datadog' without rebuilding.
     logging: {
-      destinations: 'stdout'
+      stdout: {}
     },
-    // Base directory used by the `fs` driver, one subdirectory per namespace.
     storageDir: './.data',
-    // Used by the `s3` driver for the `photos` namespace (e.g. to drop in an
-    // S3 bucket in a real deployment). Overridable via `NUXT_S3_*` env vars.
     s3: {
       accessKeyId: '',
       secretAccessKey: '',

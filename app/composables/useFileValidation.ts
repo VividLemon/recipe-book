@@ -13,9 +13,6 @@ export const usePhotoFileValidation = ({
       })
 
   return (optional: boolean = false) => {
-    // `.nullable()` keeps the input/output shape as `File | null` for both branches
-    // (matching the `coverImage: File | null` recipe model), the `optional` flag only
-    // controls whether `null` is allowed to pass validation at runtime.
     return file()
       .min(1)
       .max(1024 * 1024)
