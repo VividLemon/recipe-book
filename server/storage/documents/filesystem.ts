@@ -38,19 +38,24 @@ export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
       const offset = Math.max(0, query.offset ?? 0)
       return { items: values.slice(offset, query.limit === undefined ? undefined : offset + Math.max(0, query.limit)), total: values.length, offset, limit: query.limit }
     } catch (error: any) {
-      if (error?.code === 'ENOENT') return []
+      if (error?.code === 'ENOENT') {
+        return { items: [], total: 0, offset: Math.max(0, query.offset ?? 0), limit: query.limit }
+      }
       throw normalizeStorageError(error, 'read-failed', 'Could not list documents')
     }
   }
 
   async set(id: StorageId, value: T) {
+    let temporary: string | undefined
     try {
       await mkdir(this.directory, { recursive: true })
       const destination = this.path(id)
-      const temporary = `${destination}.${process.pid}.${Date.now()}.tmp`
+      temporary = `${destination}.${process.pid}.${Date.now()}.tmp`
       await writeFile(temporary, JSON.stringify(value), { encoding: 'utf8', flag: 'wx' })
       await rename(temporary, destination)
+      temporary = undefined
     } catch (error) {
+      if (temporary) await rm(temporary, { force: true }).catch(() => undefined)
       throw normalizeStorageError(error, 'write-failed', `Could not write document ${id}`)
     }
   }

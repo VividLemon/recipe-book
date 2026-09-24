@@ -4,10 +4,13 @@ import { FilesystemDocumentEngine } from './documents/filesystem'
 import { MemoryDocumentEngine } from './documents/memory'
 import { FilesystemFileEngine } from './filesystem'
 import { MemoryFileEngine } from './memory-file'
-import { DocumentRepository, type StorageRepositories } from './repositories'
+import type { StorageRepositories } from './repositories'
 import type { DocumentEngine, FileEngine } from './contracts'
+import { StorageError } from './contracts'
 import { createRecipeRepository } from '../recipes/repository'
 import { createRecipeTagRepository } from '../recipe-tags/repository'
+import { MongoClient } from 'mongodb'
+import { MongoDocumentEngine } from './documents/mongo'
 
 export interface StorageContainerOptions {
   documentBackend?: 'filesystem' | 'memory' | 'mongodb'
@@ -18,9 +21,18 @@ export interface StorageContainerOptions {
     recipeTags?: DocumentEngine<RecipeTagData>
   }
   photos?: FileEngine
+  mongodb?: MongoStorageOptions
+}
+
+export interface MongoStorageOptions {
+  uri: string
+  database: string
+  recipesCollection?: string
+  recipeTagsCollection?: string
 }
 
 let repositories: StorageRepositories | undefined
+let mongoClient: MongoClient | undefined
 
 export const createStorageRepositories = (options: StorageContainerOptions = {}) => {
   const {
@@ -30,6 +42,9 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
   } = options
   const memoryDocuments = documentBackend === 'memory'
   const memoryFiles = fileBackend === 'memory'
+  if (documentBackend === 'mongodb' && (!options.documents?.recipes || !options.documents.recipeTags)) {
+    throw new StorageError('configuration', 'MongoDB document engines must be composed before creating repositories')
+  }
   const recipeEngine = options.documents?.recipes
       ?? (memoryDocuments ? new MemoryDocumentEngine<RecipeData>() : new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`))
   const tagEngine = options.documents?.recipeTags
@@ -39,6 +54,22 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
   const photos = options.photos
     ?? (memoryFiles ? new MemoryFileEngine() : new FilesystemFileEngine(`${directory}/photos`))
   return { recipes, recipeTags: tags, photos }
+}
+
+export const configureStorageWithMongo = async (
+  options: Omit<StorageContainerOptions, 'documents'> & { mongodb: MongoStorageOptions }
+) => {
+  mongoClient ??= new MongoClient(options.mongodb.uri)
+  if (!mongoClient) throw new StorageError('configuration', 'Could not create MongoDB client')
+  await mongoClient.connect()
+  const database = mongoClient.db(options.mongodb.database)
+  return configureStorage({
+    ...options,
+    documents: {
+      recipes: new MongoDocumentEngine(database.collection(options.mongodb.recipesCollection ?? 'recipes') as any),
+      recipeTags: new MongoDocumentEngine(database.collection(options.mongodb.recipeTagsCollection ?? 'recipeTags') as any)
+    }
+  })
 }
 
 export const configureStorage = (options: StorageContainerOptions = {}) => {
