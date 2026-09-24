@@ -1,6 +1,6 @@
-import { photoUrlPrefix, recipePhotoPrefix } from '../../../photos/service'
+import { photoUrlPrefix, recipePhotoPrefix } from '../../../photos/operations'
 import { usePhotoFiles } from '../../../photos/repository'
-import { getAllRecipes } from '../../../utils/shared'
+import { getAllRecipes } from '../../../recipes/service'
 import { listImageVariantUrls } from '~/utils/photoVariants'
 import { consola } from 'consola'
 
@@ -10,9 +10,9 @@ export default defineEventHandler(async (event) => {
       const recipes = await getAllRecipes()
       const allImages = new Set(
         recipes.flatMap((el) => [
-          ...listImageVariantUrls(el?.photos?.coverImage?.default),
-          ...listImageVariantUrls(el?.photos?.coverImage?.thumbnail),
-          ...(el?.photos?.stepsImages ?? [])
+          ...listImageVariantUrls(el.photos?.coverImage?.default),
+          ...listImageVariantUrls(el.photos?.coverImage?.thumbnail),
+          ...(el.photos?.stepsImages ?? [])
         ])
       )
       const storage = usePhotoFiles()

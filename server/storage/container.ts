@@ -40,19 +40,28 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
     fileBackend = process.env.NODE_ENV === 'test' ? 'memory' : 'filesystem',
     directory = './.data'
   } = options
-  const memoryDocuments = documentBackend === 'memory'
-  const memoryFiles = fileBackend === 'memory'
   if (documentBackend === 'mongodb' && (!options.documents?.recipes || !options.documents.recipeTags)) {
     throw new StorageError('configuration', 'MongoDB document engines must be composed before creating repositories')
   }
-  const recipeEngine = options.documents?.recipes
-      ?? (memoryDocuments ? new MemoryDocumentEngine<RecipeData>() : new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`))
-  const tagEngine = options.documents?.recipeTags
-      ?? (memoryDocuments ? new MemoryDocumentEngine<RecipeTagData>() : new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`))
+  const documentEngines = {
+    memory: () => ({
+      recipes: new MemoryDocumentEngine<RecipeData>(),
+      recipeTags: new MemoryDocumentEngine<RecipeTagData>()
+    }),
+    filesystem: () => ({
+      recipes: new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`),
+      recipeTags: new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`)
+    }),
+    mongodb: () => options.documents!
+  } as const
+  const { recipes: recipeEngine, recipeTags: tagEngine } = documentEngines[documentBackend]()
+  const fileEngines = {
+    memory: () => new MemoryFileEngine(),
+    filesystem: () => new FilesystemFileEngine(`${directory}/photos`)
+  } as const
   const recipes = createRecipeRepository(recipeEngine)
   const tags = createRecipeTagRepository(tagEngine)
-  const photos = options.photos
-    ?? (memoryFiles ? new MemoryFileEngine() : new FilesystemFileEngine(`${directory}/photos`))
+  const photos = options.photos ?? fileEngines[fileBackend]()
   return { recipes, recipeTags: tags, photos }
 }
 

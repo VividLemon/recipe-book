@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs'
-import { mkdir, open, readdir, rename, rm, writeFile } from 'node:fs/promises'
+import { access, mkdir, open, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import type { FileEngine } from './contracts'
@@ -14,7 +14,7 @@ export class FilesystemFileEngine implements FileEngine {
 
   async get(key: string) {
     try {
-      return await (await import('node:fs/promises')).readFile(this.path(key))
+      return await readFile(this.path(key))
     } catch (error: any) {
       if (error?.code === 'ENOENT') return null
       throw normalizeStorageError(error, 'read-failed', `Could not read file ${key}`)
@@ -73,10 +73,22 @@ export class FilesystemFileEngine implements FileEngine {
           ? walk(join(directory, entry.name), `${prefix}${entry.name}/`)
           : `${prefix}${entry.name}`))).flat()
       }
+
       return await walk(this.directory)
     } catch (error: any) {
       if (error?.code === 'ENOENT') return []
       throw normalizeStorageError(error, 'read-failed', 'Could not list files')
+    }
+  }
+
+  async getStream(key: string) {
+    try {
+      const path = this.path(key)
+      await access(path)
+      return createReadStream(path)
+    } catch (error: any) {
+      if (error?.code === 'ENOENT') return null
+      throw normalizeStorageError(error, 'read-failed', `Could not read file ${key}`)
     }
   }
 

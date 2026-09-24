@@ -3,13 +3,12 @@ import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../util
 import { deserializeFormData } from '~/utils/serialization'
 import { notFoundError } from '../../utils/errors'
 import { useRecipeRepository } from '../../recipes/repository'
-import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../photos/service'
+import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../photos/operations'
 import { recipes } from '../../utils/validation'
 import sanitizeHtml from 'sanitize-html'
 import { consola } from 'consola'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeRepository()
   const [{ id }, raw] = await Promise.all([
     getValidatedRouterParams(event, recipes.update.params.parse),
     readMultipartFormData(event)
@@ -20,6 +19,7 @@ export default defineEventHandler(async (event) => {
   const parsed = deserializeFormData(raw)
   const z = await recipes.update.body.safeParseAsync(parsed)
   if (z.error) throw validationError(z.error)
+  const storage = useRecipeRepository()
   const { coverImage: file, ...rest } = z.data
 
   const { error, photos: coverImage } = file

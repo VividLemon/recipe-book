@@ -31,6 +31,7 @@ export interface FileEngine {
   putStream(key: string, value: AsyncIterable<Uint8Array> | Readable): Promise<void>
   remove(key: string): Promise<void>
   list(): Promise<string[]>
+  getStream(key: string): Promise<Readable | null>
   createReadStream(key: string): Readable
 }
 

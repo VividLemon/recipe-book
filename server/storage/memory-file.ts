@@ -13,6 +13,10 @@ export class MemoryFileEngine implements FileEngine {
   }
   async remove(key: string) { this.files.delete(assertStorageKey(key)) }
   async list() { return [...this.files.keys()] }
+  async getStream(key: string) {
+    const value = this.files.get(assertStorageKey(key))
+    return value ? Readable.from([value]) : null
+  }
   createReadStream(key: string) {
     const value = this.files.get(assertStorageKey(key))
     return Readable.from(value ? [value] : [])

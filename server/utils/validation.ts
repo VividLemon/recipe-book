@@ -8,7 +8,7 @@ import {
   type UpdateRecipeRequest,
   recipeTagVariantsWeb
 } from '../../types/recipe'
-import { getRecipeTags } from './shared'
+import { getRecipeTags } from '../recipe-tags/service'
 
 type ValidatorObject = Partial<Record<'params' | 'body' | 'query', unknown>>
 

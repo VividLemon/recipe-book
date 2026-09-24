@@ -1,4 +1,3 @@
-import { fileTypeFromBuffer } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
 
 /**
@@ -13,12 +12,18 @@ export default defineEventHandler(async (event) => {
   // segments or leading slashes the same way).
   if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
 
-  const raw = await usePhotoFiles().get(name)
-  if (!raw) throw notFoundError
-
-  const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw)
-  const type = await fileTypeFromBuffer(buffer)
-  setResponseHeader(event, 'Content-Type', type?.mime ?? 'application/octet-stream')
+  const extension = name.split('.').pop()?.toLowerCase()
+  const contentTypes: Record<string, string> = {
+    avif: 'image/avif',
+    webp: 'image/webp',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif'
+  }
+  const stream = await usePhotoFiles().getStream(name)
+  if (!stream) throw notFoundError
+  setResponseHeader(event, 'Content-Type', contentTypes[extension ?? ''] ?? 'application/octet-stream')
   setResponseHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
-  return buffer
+  return stream
 })
