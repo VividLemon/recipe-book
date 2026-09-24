@@ -91,4 +91,14 @@ yarn preview
 bun run preview
 ```
 
+## Storage
+
+Server persistence is provided by typed engines in `server/storage`. Recipe
+documents and photos use the filesystem by default under `STORAGE_DIR`
+(`.data`), while tests select the in-memory engines through Nuxt's `$test`
+runtime configuration. The repository layer keeps API handlers independent of
+the backend. A native Mongo collection can be supplied to
+`MongoDocumentEngine` when a deployment already provides MongoDB; Mongo is
+intentionally an optional adapter and is not required by this application.
+
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

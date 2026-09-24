@@ -2,20 +2,20 @@ import type { RecipeData } from '../../../types/recipe'
 import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
 import { notFoundError } from '../../utils/errors'
-import { useRecipeStorage } from '../../utils/storage'
+import { useRecipeRepository } from '../../utils/storage'
 import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 import sanitizeHtml from 'sanitize-html'
 import { consola } from 'consola'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
+  const storage = useRecipeRepository()
   const [{ id }, raw] = await Promise.all([
     getValidatedRouterParams(event, recipes.update.params.parse),
     readMultipartFormData(event)
   ])
   if (!raw) throw noDataError
-  const previous = Object.freeze(await storage.getItem(id))
+  const previous = Object.freeze(await storage.get(id))
   if (!previous) throw notFoundError
   const parsed = deserializeFormData(raw)
   const z = await recipes.update.body.safeParseAsync(parsed)
@@ -56,6 +56,6 @@ export default defineEventHandler(async (event) => {
     })
   )
 
-  await storage.setItem(id, recipe)
+  await storage.set(recipe)
   setResponseStatus(event, 204)
 })

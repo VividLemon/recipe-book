@@ -3,9 +3,10 @@ import { deserializeFormData } from '~/utils/serialization'
 import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
 import { processPhoto } from '../../../utils/photo'
 import { recipePhotos } from '../../../utils/validation'
+import { useRecipeRepository } from '../../../utils/storage'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
+  const storage = useRecipeRepository()
   const [raw, query] = await Promise.all([
     readMultipartFormData(event),
     getValidatedQuery(event, recipePhotos.createCover.query.parse)
@@ -18,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   let previousRecipe: RecipeData | null = null
   if (query?.id) {
-    previousRecipe = await storage.getItem(query.id)
+    previousRecipe = await storage.get(query.id)
     if (!previousRecipe) throw notFoundError
   }
 
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
   if (error || !photo) throw error
 
   if (previousRecipe) {
-    await storage.setItem(previousRecipe.id, {
+    await storage.set({
       ...previousRecipe,
       photos: {
         ...previousRecipe.photos,

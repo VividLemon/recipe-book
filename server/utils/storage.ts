@@ -1,6 +1,6 @@
-import type { RecipeData, RecipeTagData } from '../../types/recipe'
+/** Backwards-compatible accessors for server code outside repositories. */
+import { useStorageRepositories } from '../storage/container'
 
-export const useRecipeStorage = () => useStorage<RecipeData>('recipes')
-export const useRecipeTagsStorage = () => useStorage<RecipeTagData>('recipeTags')
-
-export const usePhotoStorage = () => useStorage('photos')
+export const useRecipeRepository = () => useStorageRepositories().recipes
+export const useRecipeTagsRepository = () => useStorageRepositories().recipeTags
+export const usePhotoFiles = () => useStorageRepositories().photos

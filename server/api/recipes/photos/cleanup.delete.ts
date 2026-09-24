@@ -1,5 +1,5 @@
 import { photoUrlPrefix, recipePhotoPrefix } from '../../../utils/photo'
-import { usePhotoStorage } from '../../../utils/storage'
+import { usePhotoFiles } from '../../../utils/storage'
 import { getAllRecipes } from '../../../utils/shared'
 import { listImageVariantUrls } from '~/utils/photoVariants'
 import { consola } from 'consola'
@@ -15,13 +15,13 @@ export default defineEventHandler(async (event) => {
           ...(el?.photos?.stepsImages ?? [])
         ])
       )
-      const storage = usePhotoStorage()
-      const keys = await storage.getKeys()
+      const storage = usePhotoFiles()
+      const keys = await storage.list()
       await Promise.all(
         keys.map(async (key) => {
           const url = `${photoUrlPrefix}${key}`
           if (key.startsWith(recipePhotoPrefix) && !allImages.has(url)) {
-            await storage.removeItem(key)
+            await storage.remove(key)
           }
         })
       )

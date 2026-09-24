@@ -1,11 +1,11 @@
-import { useRecipeTagsStorage } from '../../utils/storage'
+import { useRecipeTagsRepository } from '../../utils/storage'
 import type { RecipeTagData } from '../../../types/recipe'
 import { mapRecipeTagDataToWeb } from '../../utils/mappers'
 import { recipeTags } from '../../utils/validation'
 import { v7 } from 'uuid'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeTagsStorage()
+  const storage = useRecipeTagsRepository()
   const input = await readValidatedBody(
     event,
     recipeTags.create.body.parseAsync
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     createdAt: Date.now()
   }
 
-  await storage.setItem(id, recipeTag)
+  await storage.set(recipeTag)
   setResponseStatus(event, 201)
   return mapRecipeTagDataToWeb(recipeTag)
 })

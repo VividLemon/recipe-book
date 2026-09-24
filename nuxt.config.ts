@@ -33,13 +33,6 @@ export default defineNuxtConfig({
       stdout: {}
     },
     storageDir: './.data',
-    s3: {
-      accessKeyId: '',
-      secretAccessKey: '',
-      endpoint: '',
-      region: '',
-      bucket: ''
-    }
   },
 
   // CI (and any other Vitest run) sets `NODE_ENV=test`, which Nuxt/Nitro

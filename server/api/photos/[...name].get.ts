@@ -1,9 +1,9 @@
 import { fileTypeFromBuffer } from 'file-type'
-import { usePhotoStorage } from '../../utils/storage'
+import { usePhotoFiles } from '../../utils/storage'
 
 /**
- * Serves a photo out of `usePhotoStorage()`. Since the storage backend is
- * pluggable (filesystem, memory, S3, ...), photos are never served directly
+ * Serves a photo out of the configured file engine. Since the storage backend is
+ * pluggable (filesystem or memory), photos are never served directly
  * as static files - they always go through this route.
  */
 export default defineEventHandler(async (event) => {
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   // segments or leading slashes the same way).
   if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
 
-  const raw = await usePhotoStorage().getItemRaw<Buffer>(name)
+  const raw = await usePhotoFiles().get(name)
   if (!raw) throw notFoundError
 
   const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw)

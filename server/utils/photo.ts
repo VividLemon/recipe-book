@@ -4,7 +4,7 @@ import type { ImageFormatVariants, PhotosData, RecipeData } from '../../types/re
 import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
-import { usePhotoStorage } from './storage'
+import { usePhotoFiles, useRecipeRepository } from './storage'
 import { useAppConfig } from '#imports'
 import { consola } from 'consola'
 
@@ -19,7 +19,7 @@ const getDefaultFileName = () => v7().replace(/-/g, '')
 /**
  * The stored value for a photo is the public URL (`/api/photos/<key>`). This
  * strips that prefix back down to the raw storage key so it can be used with
- * `usePhotoStorage()`.
+ * the configured file engine.
  */
 const toStorageKey = (nameOrUrl: string) =>
   nameOrUrl.startsWith(photoUrlPrefix)
@@ -64,7 +64,7 @@ const getValidatedPhotoType = async (input: Buffer) => {
 }
 
 // Deleting
-export const deletePhoto = (nameOrUrl: string) => usePhotoStorage().removeItem(toStorageKey(nameOrUrl))
+export const deletePhoto = (nameOrUrl: string) => usePhotoFiles().remove(toStorageKey(nameOrUrl))
 
 const listRecipePhotoUrls = (recipe: Pick<RecipeData, 'photos'>): string[] => [
   ...listImageVariantUrls(recipe.photos?.coverImage?.default),
@@ -87,8 +87,7 @@ export const deletePhotos = async (photos: string[]) =>
   Promise.all(photos.map((photo) => deletePhoto(photo)))
 
 export const deleteRecipePhotos = async (recipeId: string) => {
-  const storage = useRecipeStorage()
-  const item = await storage.getItem(recipeId)
+  const item = await useRecipeRepository().get(recipeId)
   if (!item) throw notFoundError
   if (!item.photos) return
   await deletePhotos(listRecipePhotoUrls(item))
@@ -154,7 +153,7 @@ export const processPhoto = async (
     await applyResizeOptions({ sharp, opts })
     const key = buildStepPhotoKey(name, type.ext)
     const buffer = await sharp.toBuffer()
-    await usePhotoStorage().setItemRaw(key, buffer)
+    await usePhotoFiles().put(key, buffer)
     return { photo: toPhotoUrl(key) }
   } catch (e) {
     consola.error(e)
@@ -200,7 +199,7 @@ const processPhotoVariants = async (
     } as Record<keyof ImageFormatVariants, {name: string; buffer: Buffer}>
 
     const writeResults = await Promise.allSettled(
-      Object.values(mappedKeys).map(({ name, buffer }) => usePhotoStorage().setItemRaw(name, buffer))
+      Object.values(mappedKeys).map(({ name, buffer }) => usePhotoFiles().put(name, buffer))
     )
     const writeFailure = writeResults.find((r) => r.status === 'rejected')
     if (writeFailure) {

@@ -1,13 +1,13 @@
 import type { RecipeData } from '../../../types/recipe'
 import { mapIngredientWebToData, mapRecipeDifficultyWebToData, mapRecipeDataToWeb } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
-import { useRecipeStorage } from '../../utils/storage'
+import { useRecipeRepository } from '../../utils/storage'
 import { processPhotoWithThumbnail } from '../../utils/photo'
 import { v7 } from 'uuid'
 import sanitizeHtml from 'sanitize-html'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
+  const storage = useRecipeRepository()
   const raw = await readMultipartFormData(event)
   if (!raw) throw noDataError
   const parsed = deserializeFormData(raw)
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     id
   }
 
-  await storage.setItem(id, recipe)
+  await storage.set(recipe)
   setResponseStatus(event, 201)
   return mapRecipeDataToWeb(recipe, [])
 })
