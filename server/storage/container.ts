@@ -7,7 +7,8 @@ import { DocumentRepository, type StorageRepositories } from './repositories'
 import type { DocumentEngine, FileEngine } from './contracts'
 
 export interface StorageContainerOptions {
-  driver?: 'fs' | 'memory'
+  documentBackend?: 'filesystem' | 'memory' | 'mongodb'
+  fileBackend?: 'filesystem' | 'memory'
   directory?: string
   documents?: {
     recipes?: DocumentEngine<RecipeData>
@@ -20,20 +21,22 @@ let repositories: StorageRepositories | undefined
 
 export const createStorageRepositories = (options: StorageContainerOptions = {}) => {
   const {
-    driver = process.env.NODE_ENV === 'test' ? 'memory' : 'fs',
+    documentBackend = process.env.NODE_ENV === 'test' ? 'memory' : 'filesystem',
+    fileBackend = process.env.NODE_ENV === 'test' ? 'memory' : 'filesystem',
     directory = './.data'
   } = options
-  const memory = driver === 'memory'
+  const memoryDocuments = documentBackend === 'memory'
+  const memoryFiles = fileBackend === 'memory'
   const recipes = new DocumentRepository<RecipeData>(
     options.documents?.recipes
-      ?? (memory ? new MemoryDocumentEngine<RecipeData>() : new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`))
+      ?? (memoryDocuments ? new MemoryDocumentEngine<RecipeData>() : new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`))
   )
   const tags = new DocumentRepository<RecipeTagData>(
     options.documents?.recipeTags
-      ?? (memory ? new MemoryDocumentEngine<RecipeTagData>() : new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`))
+      ?? (memoryDocuments ? new MemoryDocumentEngine<RecipeTagData>() : new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`))
   )
   const photos = options.photos
-    ?? (memory ? new MemoryFileEngine() : new FilesystemFileEngine(`${directory}/photos`))
+    ?? (memoryFiles ? new MemoryFileEngine() : new FilesystemFileEngine(`${directory}/photos`))
   return { recipes, recipeTags: tags, photos }
 }
 

@@ -1,5 +1,5 @@
 import type { RecipeData, RecipeTagData } from '../../types/recipe'
-import { normalizeStorageError, type DocumentEngine, type FileEngine } from './contracts'
+import { normalizeStorageError, type DocumentEngine, type DocumentPage, type DocumentQuery, type FileEngine } from './contracts'
 
 export class DocumentRepository<T extends { id: string }> {
   constructor(private readonly engine: DocumentEngine<T>) {}
@@ -8,9 +8,14 @@ export class DocumentRepository<T extends { id: string }> {
       throw normalizeStorageError(error, 'read-failed', `Could not read document ${id}`)
     }
   }
-  async list() {
-    try { return await this.engine.list() } catch (error) {
+  async list(query?: DocumentQuery<T>) {
+    try { return await this.engine.list(query) } catch (error) {
       throw normalizeStorageError(error, 'read-failed', 'Could not list documents')
+    }
+  }
+  async page(query?: DocumentQuery<T>): Promise<DocumentPage<T>> {
+    try { return await this.engine.page(query) } catch (error) {
+      throw normalizeStorageError(error, 'read-failed', 'Could not page documents')
     }
   }
   async set(value: T) {

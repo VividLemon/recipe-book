@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs'
-import { mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, open, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { pipeline } from 'node:stream/promises'
 import type { FileEngine } from './contracts'
 import { assertStorageKey, normalizeStorageError, StorageError } from './contracts'
 
@@ -24,9 +25,29 @@ export class FilesystemFileEngine implements FileEngine {
     try {
       const path = this.path(key)
       await mkdir(join(this.directory, key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : ''), { recursive: true })
-      await writeFile(path, value)
+      const temporary = `${path}.${process.pid}.${Date.now()}.tmp`
+      await writeFile(temporary, value, { flag: 'wx' })
+      await rename(temporary, path)
     } catch (error) {
       throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
+    }
+  }
+
+  async putStream(key: string, value: AsyncIterable<Uint8Array> | import('node:stream').Readable) {
+      try {
+        const path = this.path(key)
+        await mkdir(join(this.directory, key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : ''), { recursive: true })
+        const temporary = `${path}.${process.pid}.${Date.now()}.tmp`
+        const handle = await open(temporary, 'wx')
+        try {
+          await pipeline(value, handle.createWriteStream())
+          await handle.sync()
+        } finally {
+          await handle.close()
+        }
+        await rename(temporary, path)
+      } catch (error) {
+        throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
     }
   }
 
