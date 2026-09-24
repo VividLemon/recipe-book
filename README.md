@@ -101,4 +101,9 @@ documents may also use `mongodb`. Filesystem data is stored under
 configurable). The repository layer keeps API handlers independent of the
 backend, and the `$test` configuration selects memory engines.
 
+Server code follows bounded contexts: `server/recipes`, `server/recipe-tags`,
+and `server/photos` contain context types, repositories, and application
+services. `server/storage` is infrastructure and exposes backend-neutral ports;
+legacy `server/utils` modules remain compatibility facades for existing imports.
+
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

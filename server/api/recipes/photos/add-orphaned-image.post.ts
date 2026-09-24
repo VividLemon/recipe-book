@@ -1,9 +1,9 @@
 import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
 import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
-import { processPhoto } from '../../../utils/photo'
+import { processPhoto } from '../../../photos/service'
 import { recipePhotos } from '../../../utils/validation'
-import { useRecipeRepository } from '../../../utils/storage'
+import { useRecipeRepository } from '../../../recipes/repository'
 
 export default defineEventHandler(async (event) => {
   const storage = useRecipeRepository()

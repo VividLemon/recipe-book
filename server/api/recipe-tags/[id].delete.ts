@@ -1,4 +1,4 @@
-import { useRecipeTagsRepository } from '../../utils/storage'
+import { useRecipeTagsRepository } from '../../recipe-tags/repository'
 import { recipeTags } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {

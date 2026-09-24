@@ -1,5 +1,5 @@
-import { useRecipeRepository } from '../../utils/storage'
-import { deleteRecipePhotos } from '../../utils/photo'
+import { useRecipeRepository } from '../../recipes/repository'
+import { deleteRecipePhotos } from '../../photos/service'
 import { recipes } from '../../utils/validation'
 import { consola } from 'consola'
 

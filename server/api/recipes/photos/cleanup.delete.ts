@@ -1,5 +1,5 @@
-import { photoUrlPrefix, recipePhotoPrefix } from '../../../utils/photo'
-import { usePhotoFiles } from '../../../utils/storage'
+import { photoUrlPrefix, recipePhotoPrefix } from '../../../photos/service'
+import { usePhotoFiles } from '../../../photos/repository'
 import { getAllRecipes } from '../../../utils/shared'
 import { listImageVariantUrls } from '~/utils/photoVariants'
 import { consola } from 'consola'

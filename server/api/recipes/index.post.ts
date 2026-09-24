@@ -1,8 +1,8 @@
 import type { RecipeData } from '../../../types/recipe'
 import { mapIngredientWebToData, mapRecipeDifficultyWebToData, mapRecipeDataToWeb } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
-import { useRecipeRepository } from '../../utils/storage'
-import { processPhotoWithThumbnail } from '../../utils/photo'
+import { useRecipeRepository } from '../../recipes/repository'
+import { processPhotoWithThumbnail } from '../../photos/service'
 import { v7 } from 'uuid'
 import sanitizeHtml from 'sanitize-html'
 

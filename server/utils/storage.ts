@@ -1,6 +1,4 @@
 /** Backwards-compatible accessors for server code outside repositories. */
-import { useStorageRepositories } from '../storage/container'
-
-export const useRecipeRepository = () => useStorageRepositories().recipes
-export const useRecipeTagsRepository = () => useStorageRepositories().recipeTags
-export const usePhotoFiles = () => useStorageRepositories().photos
+export { useRecipeRepository } from '../recipes/repository'
+export { useRecipeTagsRepository } from '../recipe-tags/repository'
+export { usePhotoFiles } from '../photos/repository'

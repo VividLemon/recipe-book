@@ -1,5 +1,5 @@
-import { useRecipeRepository } from '../../utils/storage'
-import { getRecipeTags } from '../../utils/shared'
+import { useRecipeRepository } from '../../recipes/repository'
+import { getRecipeTags } from '../../recipe-tags/service'
 import { recipes } from '../../utils/validation'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
 

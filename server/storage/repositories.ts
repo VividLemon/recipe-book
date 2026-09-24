@@ -1,4 +1,5 @@
-import type { RecipeData, RecipeTagData } from '../../types/recipe'
+import type { RecipeData } from '../recipes/types'
+import type { RecipeTagData } from '../recipe-tags/types'
 import { normalizeStorageError, type DocumentEngine, type DocumentPage, type DocumentQuery, type FileEngine } from './contracts'
 
 export class DocumentRepository<T extends { id: string }> {

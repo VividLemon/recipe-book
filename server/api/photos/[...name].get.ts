@@ -1,5 +1,5 @@
 import { fileTypeFromBuffer } from 'file-type'
-import { usePhotoFiles } from '../../utils/storage'
+import { usePhotoFiles } from '../../photos/repository'
 
 /**
  * Serves a photo out of the configured file engine. Since the storage backend is

@@ -4,7 +4,8 @@ import type { ImageFormatVariants, PhotosData, RecipeData } from '../../types/re
 import { photoError, unknownPhotoError } from './errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
-import { usePhotoFiles, useRecipeRepository } from './storage'
+import { usePhotoFiles } from '../photos/repository'
+import { useRecipeRepository } from '../recipes/repository'
 import { useAppConfig } from '#imports'
 import { consola } from 'consola'
 

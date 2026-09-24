@@ -1,4 +1,4 @@
-import { useRecipeTagsRepository } from '../../utils/storage'
+import { useRecipeTagsRepository } from '../../recipe-tags/repository'
 import type { RecipeTagData } from '../../../types/recipe'
 import { mapRecipeTagDataToWeb } from '../../utils/mappers'
 import { recipeTags } from '../../utils/validation'
