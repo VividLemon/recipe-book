@@ -1,3 +1,5 @@
+import { PassThrough } from 'node:stream'
+import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
 
 /**
@@ -21,9 +23,24 @@ export default defineEventHandler(async (event) => {
     png: 'image/png',
     gif: 'image/gif'
   }
-  const stream = await usePhotoFiles().getStream(name)
-  if (!stream) throw notFoundError
-  setResponseHeader(event, 'Content-Type', contentTypes[extension ?? ''] ?? 'application/octet-stream')
+  const source = await usePhotoFiles().getStream(name)
+  if (!source) throw notFoundError
+
+  // Tee the storage stream so type detection cannot consume the response body.
+  const response = new PassThrough()
+  const detection = new PassThrough()
+  source.on('error', (error) => {
+    response.destroy(error)
+    detection.destroy(error)
+  })
+  source.pipe(response)
+  source.pipe(detection)
+  const detectedType = await fileTypeFromStream(detection).catch(() => undefined)
+  setResponseHeader(
+    event,
+    'Content-Type',
+    detectedType?.mime ?? contentTypes[extension ?? ''] ?? 'application/octet-stream'
+  )
   setResponseHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
-  return stream
+  return response
 })

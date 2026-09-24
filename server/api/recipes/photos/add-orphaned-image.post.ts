@@ -1,3 +1,4 @@
+import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
 import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
 import { processPhoto } from '../../../photos/operations'
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const z = await recipePhotos.createCover.body.safeParseAsync(parsed)
   if (z.error) throw validationError(z.error)
   const { file } = z.data
-  let previousRecipe: Awaited<ReturnType<typeof getRecipe>> = null
+  let previousRecipe: RecipeData | null = null
   if (query?.id) {
     previousRecipe = await getRecipe(query.id)
     if (!previousRecipe) throw notFoundError
