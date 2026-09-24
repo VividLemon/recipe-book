@@ -1,9 +1,8 @@
-import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
 import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
 import { processPhoto } from '../../../photos/operations'
 import { recipePhotos } from '../../../utils/validation'
-import { useRecipeRepository } from '../../../recipes/repository'
+import { addStepPhoto, getRecipe } from '../../../recipes/service'
 
 export default defineEventHandler(async (event) => {
   const [raw, query] = await Promise.all([
@@ -15,11 +14,9 @@ export default defineEventHandler(async (event) => {
   const z = await recipePhotos.createCover.body.safeParseAsync(parsed)
   if (z.error) throw validationError(z.error)
   const { file } = z.data
-  const storage = useRecipeRepository()
-
-  let previousRecipe: RecipeData | null = null
+  let previousRecipe: Awaited<ReturnType<typeof getRecipe>> = null
   if (query?.id) {
-    previousRecipe = await storage.get(query.id)
+    previousRecipe = await getRecipe(query.id)
     if (!previousRecipe) throw notFoundError
   }
 
@@ -30,13 +27,7 @@ export default defineEventHandler(async (event) => {
   if (error || !photo) throw error
 
   if (previousRecipe) {
-    await storage.set({
-      ...previousRecipe,
-      photos: {
-        ...previousRecipe.photos,
-        stepsImages: [...(previousRecipe.photos?.stepsImages || []), photo]
-      }
-    })
+    await addStepPhoto(previousRecipe, photo)
   }
 
   setResponseStatus(event, 201)

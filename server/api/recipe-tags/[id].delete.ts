@@ -1,4 +1,4 @@
-import { useRecipeTagsRepository } from '../../recipe-tags/repository'
+import { deleteRecipeTag } from '../../recipe-tags/service'
 import { recipeTags } from '../../utils/validation'
 
 export default defineEventHandler(async (event) => {
@@ -6,8 +6,6 @@ export default defineEventHandler(async (event) => {
     event,
     recipeTags.delete.params.parse
   )
-  const storage = useRecipeTagsRepository()
-
-  await storage.remove(id)
+  await deleteRecipeTag(id)
   setResponseStatus(event, 204)
 })

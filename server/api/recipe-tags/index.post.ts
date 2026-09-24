@@ -1,4 +1,4 @@
-import { useRecipeTagsRepository } from '../../recipe-tags/repository'
+import { createRecipeTag } from '../../recipe-tags/service'
 import type { RecipeTagData } from '../../../types/recipe'
 import { recipeTags } from '../../utils/validation'
 import { v7 } from 'uuid'
@@ -16,7 +16,6 @@ export default defineEventHandler(async (event) => {
     createdAt: Date.now()
   }
 
-  const storage = useRecipeTagsRepository()
-  await storage.set(recipeTag)
+  await createRecipeTag(recipeTag)
   setResponseStatus(event, 201)
 })

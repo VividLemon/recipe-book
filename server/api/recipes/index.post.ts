@@ -1,7 +1,7 @@
 import type { RecipeData } from '../../../types/recipe'
 import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
-import { useRecipeRepository } from '../../recipes/repository'
+import { createRecipe } from '../../recipes/service'
 import { processPhotoWithThumbnail } from '../../photos/operations'
 import { v7 } from 'uuid'
 import sanitizeHtml from 'sanitize-html'
@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
     ? await processPhotoWithThumbnail(file)
     : {}
   if (error) throw error
-  const storage = useRecipeRepository()
 
   const id = v7()
   const recipe: RecipeData = {
@@ -32,6 +31,6 @@ export default defineEventHandler(async (event) => {
     id
   }
 
-  await storage.set(recipe)
+  await createRecipe(recipe)
   setResponseStatus(event, 201)
 })

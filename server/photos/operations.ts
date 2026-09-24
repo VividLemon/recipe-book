@@ -94,6 +94,17 @@ export const deleteRecipePhotos = async (recipeId: string) => {
   await deletePhotos(listRecipePhotoUrls(item))
 }
 
+export const cleanupOrphanedPhotos = async (recipes: RecipeData[]) => {
+  const allImages = new Set(recipes.flatMap((recipe) => listRecipePhotoUrls(recipe)))
+  const storage = usePhotoFiles()
+  const keys = await storage.list()
+  await Promise.all(keys.map(async (key) => {
+    if (key.startsWith(recipePhotoPrefix) && !allImages.has(toPhotoUrl(key))) {
+      await storage.remove(key)
+    }
+  }))
+}
+
 const applyResizeOptions = async ({
   sharp,
   opts
