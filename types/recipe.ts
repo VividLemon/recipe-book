@@ -303,7 +303,7 @@ export interface UpdateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
-  photos?: Buffer
+  coverImage?: Buffer
 }
 
 export interface CreateRecipeRequest {
@@ -313,6 +313,6 @@ export interface CreateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
-  photos?: Buffer
+  coverImage?: Buffer
   stepsImages?: string[]
 }
