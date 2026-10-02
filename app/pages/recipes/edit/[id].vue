@@ -75,7 +75,7 @@ const save = async () => {
       steps: rest.steps,
       difficulty: rest.difficulty,
       time: Number.parseInt(rest.time || '')
-    })
+    }
 
     await recipeMutations.update.mutateAsync({
       id: id.value,

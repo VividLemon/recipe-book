@@ -65,10 +65,14 @@ export const useRecipeMutations = () => {
     const [, name, tagId, difficulty] = key
     return (
       (typeof name !== 'string' ||
+        !name ||
         recipe.name.toLocaleLowerCase().includes(name.toLocaleLowerCase())) &&
       (typeof tagId !== 'string' ||
+        !tagId ||
         recipe.tags.some((tag) => tag.id === tagId)) &&
-      (typeof difficulty !== 'string' || recipe.difficulty === difficulty)
+      (typeof difficulty !== 'string' ||
+        !difficulty ||
+        recipe.difficulty === difficulty)
     )
   }
 
