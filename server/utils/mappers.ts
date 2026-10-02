@@ -1,3 +1,5 @@
+import type { DocumentQuery } from '../storage/contracts'
+import type { RecipeListQuery } from '../../types/listQuery'
 import type {
   IngredientData,
   IngredientUnitData,
@@ -91,4 +93,16 @@ export const mapRecipeDataToWeb = (
   difficulty: recipe.difficulty,
   time: recipe.time,
   photos: recipe.photos ? mapPhotosDataToWeb(recipe.photos) : undefined
+})
+
+export const mapRecipeListQueryToDocumentQuery = (
+  query: RecipeListQuery
+): DocumentQuery<RecipeData> => ({
+  offset: query.offset,
+  limit: query.limit,
+  sortBy: query.sortBy,
+  sortDirection: query.sortDirection,
+  filter: query.filter?.difficulty
+    ? { difficulty: mapRecipeDifficultyWebToData(query.filter.difficulty) }
+    : undefined
 })

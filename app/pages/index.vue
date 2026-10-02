@@ -158,6 +158,12 @@ const toggleSortOrder = () => {
 
 const gridPerRow = ref<number | 'auto'>('auto')
 
+const serverSortBy = computed(() =>
+  sortBy.value && sortBy.value !== 'favorite' && ['name', 'createdAt', 'updatedAt', 'time'].includes(sortBy.value)
+    ? sortBy.value
+    : undefined
+)
+
 const recipeTags = await useFetch('/api/recipe-tags')
 const recipeTagOptions = computed(() => [
   { text: 'Select a tag', value: '' },
@@ -165,9 +171,27 @@ const recipeTagOptions = computed(() => [
     [])
 ])
 
-const recipes = await useFetch('/api/recipes')
+const recipes = useQuery({
+  key: () => [
+    'recipes',
+    {
+      difficulty: filters.value.difficulty || undefined,
+      sortBy: serverSortBy.value,
+      sortDirection: serverSortBy.value ? sortOrder.value : undefined
+    }
+  ],
+  query: () =>
+    $fetch<ReadRecipeResponse>('/api/recipes', {
+      query: {
+        difficulty: filters.value.difficulty || undefined,
+        sortBy: serverSortBy.value,
+        sortDirection: serverSortBy.value ? sortOrder.value : undefined
+      }
+    }),
+  staleTime: 30_000
+})
 const computedRecipes = computed<ReadRecipeResponse>(() => {
-  let items = recipes.data.value || []
+  let items = [...(recipes.data.value || [])]
   if (filters.value.name) {
     items = items.filter((el) =>
       el.name.toLowerCase().includes(filters.value.name.toLowerCase())
@@ -177,9 +201,6 @@ const computedRecipes = computed<ReadRecipeResponse>(() => {
     items = items.filter((el) =>
       el.tags.some((tag) => tag.id === filters.value.tag)
     )
-  }
-  if (filters.value.difficulty) {
-    items = items.filter((el) => el.difficulty === filters.value.difficulty)
   }
   if (sortBy.value) {
     if (sortBy.value === 'favorite') {
@@ -197,18 +218,6 @@ const computedRecipes = computed<ReadRecipeResponse>(() => {
       items = sortOrder.value === 'asc'
           ? [...favoriteItems, ...nonFavoriteItems]
           : [...nonFavoriteItems, ...favoriteItems]
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items.sort((a: any, b: any) => {
-        if (!sortBy.value) return 0
-        const valueA = a[sortBy.value]
-        const valueB = b[sortBy.value]
-        if (typeof valueA === 'number' && typeof valueB === 'number')
-          return valueA - valueB
-        if (typeof valueA === 'string' && typeof valueB === 'string')
-          return valueA.localeCompare(valueB)
-        return 0
-      })
     }
   }
   return items

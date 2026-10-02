@@ -1,4 +1,4 @@
-import { array, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
+import { array, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
 import {
   type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
@@ -8,6 +8,8 @@ import {
   type UpdateRecipeRequest,
   recipeTagVariantsWeb
 } from '../../types/recipe'
+import { recipeDifficultyWeb } from '../../types/recipe'
+import { recipeSortKeys } from '../../types/listQuery'
 import { getRecipeTags } from '../recipe-tags/service'
 
 type ValidatorObject = Partial<Record<'params' | 'body' | 'query', unknown>>
@@ -90,7 +92,15 @@ export const recipes = {
       id: string().nonempty()
     })
   },
-  read: {}
+  read: {
+    query: object({
+      offset: coerce.number().int().min(0).optional(),
+      limit: coerce.number().int().min(1).max(100).optional(),
+      sortBy: zodEnum(recipeSortKeys).optional(),
+      sortDirection: zodEnum(['asc', 'desc']).optional(),
+      difficulty: zodEnum(recipeDifficultyWeb).optional()
+    })
+  }
 } satisfies Record<string, ValidatorObject>
 
 export const recipePhotos = {
