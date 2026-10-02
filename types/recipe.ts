@@ -277,6 +277,47 @@ export interface RecipeWeb {
 
 export type ReadRecipeResponse = RecipeWeb[]
 
+export type RecipeListSortField =
+  | 'name'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'time'
+  | 'favorite'
+
+export interface RecipeListApplicationQuery {
+  filters: {
+    name: string
+    tagId: string
+    difficulty: RecipeDifficultyWeb | ''
+  }
+  sort: {
+    field: RecipeListSortField | ''
+    direction: 'asc' | 'desc'
+  }
+  pagination: {
+    page: number
+    pageSize: number
+  }
+}
+
+export interface RecipeListApiQuery {
+  name?: string
+  tag?: string
+  difficulty?: RecipeDifficultyWeb
+  sortBy?: Exclude<RecipeListSortField, 'favorite'>
+  sortOrder: 'asc' | 'desc'
+  page: number
+  pageSize: number
+}
+
+export interface ReadRecipePageResponse {
+  items: ReadRecipeResponse
+  total: number
+  page: number
+  pageSize: number
+  nextPage: number | null
+}
+
 export type ShowRecipeResponse = RecipeWeb
 
 // ============================================================================
