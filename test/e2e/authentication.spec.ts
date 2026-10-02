@@ -29,6 +29,6 @@ test('registers an account, changes its password, and logs in again', async ({ p
 
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill(updatedPassword)
-  await page.getByRole('button', { name: 'Log in' }).click()
+  await page.locator('form').getByRole('button', { name: 'Log in' }).click()
   await expect(page).toHaveURL(/\/$/)
 })
