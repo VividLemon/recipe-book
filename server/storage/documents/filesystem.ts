@@ -1,9 +1,9 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { DocumentEngine, DocumentPage, DocumentQuery, DocumentValue, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentPage, DocumentQuery, StorageId } from '../contracts'
 import { assertStorageKey, normalizeStorageError } from '../contracts'
 
-export class FilesystemDocumentEngine<T extends DocumentValue> implements DocumentEngine<T> {
+export class FilesystemDocumentEngine<T extends object> implements DocumentEngine<T> {
   constructor(private readonly directory: string) {}
 
   private path(id: StorageId) {
@@ -29,7 +29,7 @@ export class FilesystemDocumentEngine<T extends DocumentValue> implements Docume
       let values = (await Promise.all(entries
         .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
         .map((entry) => this.get(entry.name.slice(0, -5)))))
-        .filter((value): value is T => value !== null)
+        .filter((value) => value !== null) as unknown as T[]
       if (query.filter) values = values.filter((value) => Object.entries(query.filter!).every(([key, expected]) => value[key as keyof T] === expected))
       if (query.sortBy) {
         const key = query.sortBy

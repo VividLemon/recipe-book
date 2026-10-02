@@ -1,6 +1,6 @@
-import type { DocumentEngine, DocumentPage, DocumentQuery, DocumentValue, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentPage, DocumentQuery, StorageId } from '../contracts'
 
-export class MemoryDocumentEngine<T extends DocumentValue> implements DocumentEngine<T> {
+export class MemoryDocumentEngine<T extends object> implements DocumentEngine<T> {
   private readonly documents = new Map<StorageId, T>()
 
   async get(id: StorageId) {

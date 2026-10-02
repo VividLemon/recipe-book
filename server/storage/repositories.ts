@@ -1,8 +1,8 @@
 import type { RecipeData } from '../recipes/types'
 import type { RecipeTagData } from '../recipe-tags/types'
-import { normalizeStorageError, type DocumentEngine, type DocumentPage, type DocumentQuery, type DocumentValue, type FileEngine } from './contracts'
+import { normalizeStorageError, type DocumentEngine, type DocumentPage, type DocumentQuery, type FileEngine } from './contracts'
 
-export class DocumentRepository<T extends { id: string } & DocumentValue> {
+export class DocumentRepository<T extends { id: string }> {
   constructor(private readonly engine: DocumentEngine<T>) {}
   async get(id: string) {
     try { return await this.engine.get(id) } catch (error) {

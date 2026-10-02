@@ -1,9 +1,9 @@
-import type { DocumentEngine, DocumentPage, DocumentQuery, DocumentValue, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentPage, DocumentQuery, StorageId } from '../contracts'
 import type { Collection, Filter } from 'mongodb'
 
 type StoredDocument<T extends object> = Omit<T, '_id'> & { _id: string }
 
-export class MongoDocumentEngine<T extends DocumentValue> implements DocumentEngine<T> {
+export class MongoDocumentEngine<T extends object> implements DocumentEngine<T> {
   constructor(private readonly collection: Collection<StoredDocument<T>>) {}
 
   async get(id: StorageId) {
