@@ -1,5 +1,5 @@
 <template>
-  <BModal v-model="open" title="Change password" no-footer>
+  <BModal v-model="open" title="Change password">
     <BAlert v-if="error" :model-value="true" variant="danger">{{ error }}</BAlert>
     <BForm id="change-password-form" @submit.prevent="submit">
       <BFormGroup label="Old password" label-for="old-password">
