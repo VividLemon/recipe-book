@@ -1,11 +1,11 @@
 import type { ReadRecipeResponse } from '../../../types/recipe'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
-import { getAllRecipes, getRecipeTags } from '../../utils/shared'
+import { getRecipeTags } from '../../recipe-tags/service'
+import { useRecipeRepository } from '#server/recipes/repository.ts';
 
 export default defineEventHandler(async () => {
-  const [tags, items] = await Promise.all([getRecipeTags(), getAllRecipes()])
+  const [tags, items] = await Promise.all([getRecipeTags(), useRecipeRepository().list()])
 
   return items
-    .filter((el) => el !== null)
     .map((el) => mapRecipeDataToWeb(el, tags)) satisfies ReadRecipeResponse
 })

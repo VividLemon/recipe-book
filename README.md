@@ -91,4 +91,19 @@ yarn preview
 bun run preview
 ```
 
+## Storage
+
+Server persistence is provided by typed engines in `server/storage`. Configure
+`NUXT_DOCUMENT_BACKEND` and `NUXT_FILE_BACKEND` as `filesystem` or `memory`;
+documents may also use `mongodb`. Filesystem data is stored under
+`NUXT_STORAGE_DIR` (default `.data`). MongoDB additionally requires
+`NUXT_MONGODB_URI` and `NUXT_MONGODB_DATABASE` (collection names are
+configurable). The repository layer keeps API handlers independent of the
+backend, and the `$test` configuration selects memory engines.
+
+Server code follows bounded contexts: `server/recipes`, `server/recipe-tags`,
+and `server/photos` contain context types, repositories, and application
+services. `server/storage` is infrastructure and exposes backend-neutral ports;
+legacy `server/utils` modules remain compatibility facades for existing imports.
+
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

@@ -1,4 +1,4 @@
-import { getRecipeTags } from '../../utils/shared'
+import { getRecipeTags } from '../../recipe-tags/service'
 import { mapRecipeTagDataToWeb } from '#server/utils/mappers.ts'
 
 export default defineEventHandler(async () => {

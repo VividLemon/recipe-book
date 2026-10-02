@@ -14,7 +14,8 @@
     "test:unit": "vitest --project unit",
     "test:nuxt": "vitest --project nuxt",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@bootstrap-vue-next/nuxt": "^1.0.0",
@@ -40,6 +41,7 @@
     "bootstrap-vue-next": "^1.2.1",
     "eslint": "^9.0.0 || ^10.0.0",
     "file-type": "^22.1.1",
+    "mongodb": "^6.20.0",
     "nuxt": "^4.5.2",
     "nuxt-zod-i18n": "^1.12.1",
     "pinia": "^4.0.3",
@@ -61,6 +63,8 @@
     "@vueuse/core": "^15.0.0",
     "happy-dom": "^20.14.5",
     "playwright-core": "^1.63.0",
-    "vitest": "^5.0.1"
+    "typescript": "^6.0.0",
+    "vitest": "^5.0.1",
+    "vue-tsc": "^3.3.12"
   }
 }

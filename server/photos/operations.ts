@@ -1,10 +1,11 @@
 import Sharp, {type Sharp as SharpType, type ResizeOptions} from 'sharp'
 import { v7 } from 'uuid'
 import type { ImageFormatVariants, PhotosData, RecipeData } from '../../types/recipe'
-import { photoError, unknownPhotoError } from './errors'
+import { photoError, unknownPhotoError } from '../utils/errors'
 import { fileTypeFromBuffer } from 'file-type'
 import { buildPhotoVariantKeys, buildStepPhotoKey, listImageVariantUrls } from '~/utils/photoVariants'
-import { usePhotoStorage } from './storage'
+import { usePhotoFiles } from './repository'
+import { useRecipeRepository } from '../recipes/repository'
 import { useAppConfig } from '#imports'
 import { consola } from 'consola'
 
@@ -19,7 +20,7 @@ const getDefaultFileName = () => v7().replace(/-/g, '')
 /**
  * The stored value for a photo is the public URL (`/api/photos/<key>`). This
  * strips that prefix back down to the raw storage key so it can be used with
- * `usePhotoStorage()`.
+ * the configured file engine.
  */
 const toStorageKey = (nameOrUrl: string) =>
   nameOrUrl.startsWith(photoUrlPrefix)
@@ -64,7 +65,7 @@ const getValidatedPhotoType = async (input: Buffer) => {
 }
 
 // Deleting
-export const deletePhoto = (nameOrUrl: string) => usePhotoStorage().removeItem(toStorageKey(nameOrUrl))
+export const deletePhoto = (nameOrUrl: string) => usePhotoFiles().remove(toStorageKey(nameOrUrl))
 
 const listRecipePhotoUrls = (recipe: Pick<RecipeData, 'photos'>): string[] => [
   ...listImageVariantUrls(recipe.photos?.coverImage?.default),
@@ -87,11 +88,25 @@ export const deletePhotos = async (photos: string[]) =>
   Promise.all(photos.map((photo) => deletePhoto(photo)))
 
 export const deleteRecipePhotos = async (recipeId: string) => {
-  const storage = useRecipeStorage()
-  const item = await storage.getItem(recipeId)
+  const item = await useRecipeRepository().get(recipeId)
   if (!item) throw notFoundError
   if (!item.photos) return
   await deletePhotos(listRecipePhotoUrls(item))
+}
+
+export const cleanupOrphanedPhotos = async (recipes: RecipeData[]) => {
+  const allImages = new Set(recipes.flatMap((recipe) => listRecipePhotoUrls(recipe)))
+  const storage = usePhotoFiles()
+  const keys = await storage.list()
+  const results = await Promise.allSettled(keys.map(async (key) => {
+    if (key.startsWith(recipePhotoPrefix) && !allImages.has(toPhotoUrl(key))) {
+      await storage.remove(key)
+    }
+  }))
+  results.forEach((result, index) => {
+    if (result.status === 'rejected')
+      consola.error(`Failed to remove orphaned photo ${keys[index]}:`, result.reason)
+  })
 }
 
 const applyResizeOptions = async ({
@@ -153,8 +168,7 @@ export const processPhoto = async (
     const sharp = Sharp(input)
     await applyResizeOptions({ sharp, opts })
     const key = buildStepPhotoKey(name, type.ext)
-    const buffer = await sharp.toBuffer()
-    await usePhotoStorage().setItemRaw(key, buffer)
+    await usePhotoFiles().putStream(key, sharp)
     return { photo: toPhotoUrl(key) }
   } catch (e) {
     consola.error(e)
@@ -182,25 +196,19 @@ const processPhotoVariants = async (
     const sharp = Sharp(input)
     await applyResizeOptions({ sharp, opts })
 
-    const [originalBuffer, webpBuffer, avifBuffer] = await Promise.all([
-      sharp.clone().toBuffer(),
-      sharp.clone().webp().toBuffer(),
-      sharp.clone().avif().toBuffer()
-    ])
-
     const keys = buildPhotoVariantKeys({
       baseName: opts.baseName,
       role: opts.role,
       originalExt: type.ext
     })
     const mappedKeys = {
-      avif: { name: keys.avif, buffer: avifBuffer },
-      webp: { name: keys.webp, buffer: webpBuffer },
-      original: { name: keys.original, buffer: originalBuffer }
-    } as Record<keyof ImageFormatVariants, {name: string; buffer: Buffer}>
+      avif: { name: keys.avif, stream: sharp.clone().avif() },
+      webp: { name: keys.webp, stream: sharp.clone().webp() },
+      original: { name: keys.original, stream: sharp.clone() }
+    } as Record<keyof ImageFormatVariants, {name: string; stream: SharpType}>
 
     const writeResults = await Promise.allSettled(
-      Object.values(mappedKeys).map(({ name, buffer }) => usePhotoStorage().setItemRaw(name, buffer))
+      Object.values(mappedKeys).map(({ name, stream }) => usePhotoFiles().putStream(name, stream))
     )
     const writeFailure = writeResults.find((r) => r.status === 'rejected')
     if (writeFailure) {

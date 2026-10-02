@@ -1,9 +1,11 @@
-import { fileTypeFromBuffer } from 'file-type'
-import { usePhotoStorage } from '../../utils/storage'
+import { PassThrough } from 'node:stream'
+import { fileTypeFromStream } from 'file-type'
+import { usePhotoFiles } from '../../photos/repository'
+import { photoMimeTypes } from '../../photos/utils'
 
 /**
- * Serves a photo out of `usePhotoStorage()`. Since the storage backend is
- * pluggable (filesystem, memory, S3, ...), photos are never served directly
+ * Serves a photo out of the configured file engine. Since the storage backend is
+ * pluggable (filesystem or memory), photos are never served directly
  * as static files - they always go through this route.
  */
 export default defineEventHandler(async (event) => {
@@ -13,12 +15,15 @@ export default defineEventHandler(async (event) => {
   // segments or leading slashes the same way).
   if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
 
-  const raw = await usePhotoStorage().getItemRaw<Buffer>(name)
-  if (!raw) throw notFoundError
+  const extension = name.split('.').pop()?.toLowerCase()
+  const source = await usePhotoFiles().getStream(name)
+  if (!source) throw notFoundError
 
-  const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw)
-  const type = await fileTypeFromBuffer(buffer)
-  setResponseHeader(event, 'Content-Type', type?.mime ?? 'application/octet-stream')
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
-  return buffer
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=300')
+  setResponseHeader(
+    event,
+    'Content-Type',
+    photoMimeTypes[extension as keyof typeof photoMimeTypes] ?? 'application/octet-stream'
+  )
+  return source
 })
