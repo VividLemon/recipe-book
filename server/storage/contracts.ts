@@ -2,7 +2,7 @@ import type { Readable } from 'node:stream'
 
 export type StorageId = string
 
-export interface DocumentQuery<T> {
+export interface DocumentQuery<T extends object> {
   offset?: number
   limit?: number
   filter?: Partial<T>
@@ -10,14 +10,14 @@ export interface DocumentQuery<T> {
   sortDirection?: 'asc' | 'desc'
 }
 
-export interface DocumentPage<T> {
+export interface DocumentPage<T extends object> {
   items: T[]
   total: number
   offset: number
   limit?: number
 }
 
-export interface DocumentEngine<T> {
+export interface DocumentEngine<T extends object> {
   get(id: StorageId): Promise<T | null>
   list(query?: DocumentQuery<T>): Promise<T[]>
   page(query?: DocumentQuery<T>): Promise<DocumentPage<T>>

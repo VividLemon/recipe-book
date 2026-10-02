@@ -53,6 +53,9 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
     mongodb: () => options.documents!
   } as const
   const { recipes: recipeEngine, recipeTags: tagEngine } = documentEngines[documentBackend]()
+  if (!recipeEngine || !tagEngine) {
+    throw new StorageError('configuration', 'Both recipe document engines must be configured')
+  }
   const fileEngines = {
     memory: () => new MemoryFileEngine(),
     filesystem: () => new FilesystemFileEngine(`${directory}/photos`)
