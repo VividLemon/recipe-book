@@ -8,8 +8,11 @@
 </template>
 
 <script setup lang="ts">
-import type { IngredientWeb, recipeDifficultyWeb } from '../../../types/recipe'
-import type { RecipeWeb } from '../../../types/recipe'
+import type {
+  IngredientWeb,
+  RecipeWeb,
+  recipeDifficultyWeb
+} from '../../../types/recipe'
 import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
 
 const toaster = useToaster()

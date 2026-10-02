@@ -3,6 +3,7 @@ import { mapIngredientWebToData, mapRecipeDifficultyWebToData, mapRecipeDataToWe
 import { deserializeFormData } from '~/utils/serialization'
 import { useRecipeStorage } from '../../utils/storage'
 import { processPhotoWithThumbnail } from '../../utils/photo'
+import { getRecipeTags } from '../../utils/shared'
 import { v7 } from 'uuid'
 import sanitizeHtml from 'sanitize-html'
 
@@ -34,5 +35,5 @@ export default defineEventHandler(async (event) => {
 
   await storage.setItem(id, recipe)
   setResponseStatus(event, 201)
-  return mapRecipeDataToWeb(recipe, [])
+  return mapRecipeDataToWeb(recipe, await getRecipeTags())
 })

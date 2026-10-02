@@ -1,7 +1,11 @@
 <template>
   <BContainer>
     <BRow>
-      <BCol v-for="recipe in formattedRecipes" :key="recipe.id" sm="4" lg="4">
+      <BCol
+        v-for="recipe in formattedRecipes"
+        :key="recipe.id"
+        :cols="chunkSize || 1"
+      >
         <BCard
           :title="recipe.name"
           :img-alt="recipe.name"

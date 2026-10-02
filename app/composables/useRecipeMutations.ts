@@ -63,10 +63,10 @@ export const useRecipeMutations = () => {
 
   const matchesList = (key: unknown[], recipe: RecipeWeb) => {
     const [, name, tagId, difficulty] = key
+    const normalizedName = typeof name === 'string' ? name.trim() : ''
     return (
-      (typeof name !== 'string' ||
-        !name ||
-        recipe.name.toLocaleLowerCase().includes(name.toLocaleLowerCase())) &&
+      (!normalizedName ||
+        recipe.name.toLocaleLowerCase().includes(normalizedName.toLocaleLowerCase())) &&
       (typeof tagId !== 'string' ||
         !tagId ||
         recipe.tags.some((tag) => tag.id === tagId)) &&

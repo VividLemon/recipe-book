@@ -9,6 +9,7 @@
           <BFormInput
             id="FilterName"
             v-model="name"
+            maxlength="100"
             placeholder="Enter recipe name"
           />
         </BFormGroup>
@@ -68,7 +69,7 @@
     <BRow class="mt-2">
       <BCol>
         <BAlert
-          v-if="state.status === 'error'"
+          v-if="state.status === 'error' && !recipes.length"
           :model-value="true"
           variant="warning"
         >
@@ -89,6 +90,13 @@
           No recipes found. Make one <BLink to="/recipes/create">here</BLink>
         </BAlert>
         <template v-else>
+          <BAlert
+            v-if="state.status === 'error'"
+            :model-value="true"
+            variant="warning"
+          >
+            {{ error }}
+          </BAlert>
           <RecipesGrid
             v-if="tableMode === 'Grid'"
             :per-row="gridPerRow"
@@ -102,11 +110,11 @@
           />
           <div class="d-flex flex-column align-items-center gap-2 my-3">
             <span>{{ recipes.length }} of {{ total }} recipes</span>
-            <div v-if="hasNextPage" ref="loadMoreTrigger">
+            <div v-if="canLoadMore" ref="loadMoreTrigger">
               <BButton
                 variant="outline-primary"
                 :disabled="asyncStatus === 'loading'"
-                @click="loadMore"
+                @click="loadMore({ push: true })"
               >
                 {{ asyncStatus === 'loading' ? 'Loading…' : 'Load more' }}
               </BButton>
@@ -144,7 +152,7 @@ const {
   state,
   error,
   asyncStatus,
-  hasNextPage,
+  canLoadMore,
   loadMore,
   recipes,
   total
@@ -195,7 +203,7 @@ const loadMoreTrigger = useTemplateRef<HTMLElement>('loadMoreTrigger')
 useInfiniteScroll(loadMoreTrigger, loadMore, {
   distance: 150,
   canLoadMore: () =>
-    hasNextPage.value && asyncStatus.value !== 'loading'
+    canLoadMore.value && asyncStatus.value !== 'loading'
 })
 
 const openRecipe = ref(false)
