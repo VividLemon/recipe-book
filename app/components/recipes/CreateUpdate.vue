@@ -27,7 +27,7 @@
             els.forEach((el) => {ingredients.push({
               name: el,
               quantity: 1,
-              unit: ingredientUnitsWeb[0]
+              unit: defaultIngredientUnit
             })})
           }"
         />
@@ -163,6 +163,8 @@ import {
 import AddIcon from '~icons/bi/plus'
 import {object, string, number, array, enum as zEnum} from 'zod'
 
+const defaultIngredientUnit = ingredientUnitsWeb[0]
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
 const recipeDifficulties = [
@@ -191,7 +193,7 @@ const recipeTagOptions = computed(() => recipeTags.data.value || [])
 
 export type CreateRecipeModel = Omit<
   CreateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'coverImage' | 'difficulty' | 'time' | 'photo'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string
@@ -199,7 +201,7 @@ export type CreateRecipeModel = Omit<
 }
 export type UpdateRecipeModel = (Omit<
   UpdateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'coverImage' | 'difficulty' | 'time' | 'photo'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string

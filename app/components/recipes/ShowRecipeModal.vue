@@ -87,13 +87,13 @@
                   v-for="{ name, quantity, unit } in readableRecipe.ingredients"
                   :key="name"
                 >
-                  {{ name }} ({{ quantity }} {{ unit || ingredientUnitsWeb[0] }})
+                  {{ name }} ({{ quantity }} {{ unit || defaultIngredientUnit }})
                 </li>
               </ul>
               <div v-else>
                 {{
                   readableRecipe.ingredients
-                    .map(({ name: n, quantity, unit }) => `${n} (${quantity} ${unit || ingredientUnitsWeb[0]})`)
+                    .map(({ name: n, quantity, unit }) => `${n} (${quantity} ${unit || defaultIngredientUnit})`)
                     .join(', ')
                 }}
               </div>
@@ -129,6 +129,8 @@
 import { ingredientUnitsWeb, type ReadRecipeResponse } from '../../../types/recipe'
 import InfoIcon from '~icons/bi/file-earmark-arrow-down'
 import PencilIcon from '~icons/bi/pencil'
+
+const defaultIngredientUnit = ingredientUnitsWeb[0]
 
 const props = defineProps<{
   recipe: ReadRecipeResponse[number] | null

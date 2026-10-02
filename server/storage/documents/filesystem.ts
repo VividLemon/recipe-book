@@ -1,9 +1,9 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { DocumentEngine, DocumentPage, DocumentQuery, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentPage, DocumentQuery, DocumentValue, StorageId } from '../contracts'
 import { assertStorageKey, normalizeStorageError } from '../contracts'
 
-export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
+export class FilesystemDocumentEngine<T extends DocumentValue> implements DocumentEngine<T> {
   constructor(private readonly directory: string) {}
 
   private path(id: StorageId) {

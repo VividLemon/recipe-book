@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  await createRecipe(parsed)
+  const recipe = await createRecipe(parsed)
   setResponseStatus(event, 201)
+  return { id: recipe.id }
 })
