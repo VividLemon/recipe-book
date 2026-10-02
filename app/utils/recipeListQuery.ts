@@ -29,7 +29,7 @@ export const parseRecipeListRouteQuery = (
   const direction = queryString(routeQuery.order)
   return {
     filters: {
-      name: queryString(routeQuery.name),
+      name: queryString(routeQuery.name).trim(),
       tagId: queryString(routeQuery.tag),
       difficulty: recipeDifficultyWeb.some((item) => item === difficulty)
         ? difficulty as RecipeListApplicationQuery['filters']['difficulty']

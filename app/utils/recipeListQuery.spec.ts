@@ -16,7 +16,7 @@ describe('recipe list query conversion', () => {
       page: '3',
       pageSize: '50'
     })).toEqual({
-      filters: { name: ' soup ', tagId: 'tag-id', difficulty: 'Hard' },
+      filters: { name: 'soup', tagId: 'tag-id', difficulty: 'Hard' },
       sort: { field: 'time', direction: 'desc' },
       pagination: { page: 3, pageSize: 50 }
     })

@@ -9,33 +9,38 @@
 
 <script setup lang="ts">
 import type { UpdateRecipeModel } from '../../../components/recipes/CreateUpdate.vue'
+import type { RecipeWeb } from '../../../../types/recipe'
+import { until } from '@vueuse/core'
 
 const route = useRoute()
 const id = computed(() => route.params.id as string)
 
 const router = useRouter()
 const toaster = useToaster()
-const previousRecipe = await useFetch(`/api/recipes/${id.value}`)
+const previousRecipe = useRecipe(id)
+await until(() => previousRecipe.state.value.status).toMatch(/success|error/)
+const initialRecipe = previousRecipe.data.value
 
-if (!previousRecipe.data.value) {
+if (!initialRecipe) {
   await router.push('/')
   toaster.error('Recipe not found')
 }
 
 const updateRecipe = ref<UpdateRecipeModel>({
-  difficulty: previousRecipe.data.value?.difficulty || null,
-  ingredients: previousRecipe.data.value?.ingredients || [],
+  difficulty: initialRecipe?.difficulty || null,
+  ingredients: initialRecipe?.ingredients || [],
   id: id.value || '',
-  name: previousRecipe.data.value?.name || '',
+  name: initialRecipe?.name || '',
   coverImage: null,
-  steps: previousRecipe.data.value?.steps || '',
-  tags: previousRecipe.data.value?.tags.map((el) => el.id) || [],
-  time: previousRecipe.data.value?.time.toString() || null,
-  raw: previousRecipe.data.value ?? null
+  steps: initialRecipe?.steps || '',
+  tags: initialRecipe?.tags.map((el) => el.id) || [],
+  time: initialRecipe?.time.toString() || null,
+  raw: initialRecipe ?? null
 })
 
 const loading = ref(false)
 const pushToRoot = usePushToRootWithOpenRecipe()
+const recipeMutations = useRecipeMutations()
 const save = async () => {
   try {
     if (!updateRecipe.value.difficulty || !updateRecipe.value.time) return
@@ -51,13 +56,34 @@ const save = async () => {
       files: { coverImage }
     })
 
-    await $fetch(`/api/recipes/${id.value}`, {
-      method: 'PUT',
-      body
+    const previous = updateRecipe.value.raw
+    const now = Date.now()
+    const optimisticRecipe: RecipeWeb = {
+      ...previous,
+      id: id.value,
+      createdAt: previous?.createdAt ?? now,
+      updatedAt: now,
+      name: rest.name,
+      ingredients: rest.ingredients,
+      tags: rest.tags.map((tagId) =>
+        previous?.tags.find((tag) => tag.id === tagId) ?? {
+          id: tagId,
+          text: tagId,
+          createdAt: now
+        }
+      ),
+      steps: rest.steps,
+      difficulty: rest.difficulty,
+      time: Number.parseInt(rest.time || '')
     })
 
+    await recipeMutations.update.mutateAsync({
+      id: id.value,
+      body,
+      optimisticRecipe
+    })
     await pushToRoot.execute(id.value)
-    await using _ = await toaster.apiSucceeded('Recipe created!')
+    await using _ = await toaster.apiSucceeded('Recipe updated!')
   } catch (e) {
     await using _ = await toaster.apiError(e)
   } finally {
@@ -74,9 +100,7 @@ const deleteRecipe = async () => {
     }).show()
     if (!('id' in updateRecipe.value) || !resp.ok) return
     loading.value = true
-    await $fetch(`/api/recipes/${updateRecipe.value.id}`, {
-      method: 'DELETE'
-    })
+    await recipeMutations.remove.mutateAsync({ id: updateRecipe.value.id })
     await router.push({
       path: '/'
     })

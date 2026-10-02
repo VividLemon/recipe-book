@@ -4,6 +4,7 @@ import {
   applyRecipeListQuery,
   mapRecipeListApiQueryToBackend
 } from '../../server/utils/recipe-list'
+import { recipes } from '../../server/utils/validation'
 
 const recipe = (values: Partial<RecipeData> & Pick<RecipeData, 'id' | 'name'>): RecipeData => ({
   id: values.id,
@@ -18,6 +19,24 @@ const recipe = (values: Partial<RecipeData> & Pick<RecipeData, 'id' | 'name'>): 
 })
 
 describe('recipe list backend mapping', () => {
+  it('validates API query strings and supplies pagination defaults', () => {
+    expect(recipes.read.query.parse({
+      name: ' soup ',
+      page: '3',
+      pageSize: '25',
+      sortOrder: 'desc'
+    })).toEqual({
+      name: 'soup',
+      page: 3,
+      pageSize: 25,
+      sortOrder: 'desc'
+    })
+    expect(recipes.read.query.safeParse({
+      page: '0',
+      pageSize: '101'
+    }).success).toBe(false)
+  })
+
   it('maps the HTTP query into application filters, ordering, and pagination', () => {
     expect(mapRecipeListApiQueryToBackend({
       name: 'soup',

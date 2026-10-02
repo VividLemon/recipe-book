@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 import type { IngredientWeb, recipeDifficultyWeb } from '../../../types/recipe'
+import type { RecipeWeb } from '../../../types/recipe'
 import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
 
 const toaster = useToaster()
@@ -31,6 +32,7 @@ const registerStepsImage = (src: string) => {
 
 const loading = ref(false)
 const pushToRoot = usePushToRootWithOpenRecipe()
+const recipeMutations = useRecipeMutations()
 const save = async () => {
   try {
     if (!recipe.value.difficulty || !recipe.value.time) return
@@ -46,9 +48,21 @@ const save = async () => {
       files: { coverImage }
     })
 
-    const data = await $fetch('/api/recipes', {
-      method: 'POST',
-      body
+    const now = Date.now()
+    const optimisticRecipe: RecipeWeb = {
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      name: rest.name,
+      ingredients: rest.ingredients,
+      tags: rest.tags.map((id) => ({ id, text: id, createdAt: now })),
+      steps: rest.steps,
+      difficulty: rest.difficulty,
+      time: Number.parseInt(rest.time || '')
+    }
+    const data = await recipeMutations.create.mutateAsync({
+      body,
+      optimisticRecipe
     })
 
     await pushToRoot.execute(data.id)

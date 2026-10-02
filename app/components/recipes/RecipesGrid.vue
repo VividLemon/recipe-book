@@ -83,5 +83,5 @@ const chunkSize = computed(() => {
   if (typeof props.perRow === 'number') return props.perRow
   return autoBreakpoints[activeBreakpoint.value] || 1
 })
-const formattedRecipes = useFormattedRecipe(() => Array(10).fill(props.recipes).flat())
+const formattedRecipes = useFormattedRecipe(() => props.recipes)
 </script>
