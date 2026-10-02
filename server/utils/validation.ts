@@ -1,4 +1,4 @@
-import { array, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
+import { array, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
 import {
   type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
@@ -90,7 +90,17 @@ export const recipes = {
       id: string().nonempty()
     })
   },
-  read: {}
+  read: {
+    query: object({
+      name: string().trim().max(100).optional(),
+      tag: uuidv7().optional(),
+      difficulty: zodEnum(recipeDifficultyData).optional(),
+      sortBy: zodEnum(['name', 'createdAt', 'updatedAt', 'time']).optional(),
+      sortOrder: zodEnum(['asc', 'desc']).default('asc'),
+      page: coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER).default(1),
+      pageSize: coerce.number().int().min(1).max(100).default(20)
+    })
+  }
 } satisfies Record<string, ValidatorObject>
 
 export const recipePhotos = {
