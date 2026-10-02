@@ -1,9 +1,10 @@
 import { recipes } from '../../utils/validation'
 import { consola } from 'consola'
 import { deleteRecipePhotos } from '#server/photos/operations.ts';
-import { useRecipeRepository } from '#server/recipes/repository.ts';
+import { deleteRecipe } from '#server/recipes/service.ts';
 
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const { id } = await getValidatedRouterParams(
     event,
     recipes.delete.params.parse
@@ -12,6 +13,6 @@ export default defineEventHandler(async (event) => {
     consola.error('Cleanup deleted recipe photos exited with error:', e)
   }))
 
-  await useRecipeRepository().remove(id)
+  await deleteRecipe(id, user.id)
   setResponseStatus(event, 204)
 })

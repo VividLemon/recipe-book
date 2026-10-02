@@ -53,7 +53,7 @@ export const flattenRecipePages = (data: Pick<RecipePages, 'pages'> | undefined)
   data?.pages.flatMap((page) => page.items) ?? []
 
 export const buildOptimisticRecipe = (
-  input: Pick<RecipeWeb, 'name' | 'ingredients' | 'steps' | 'difficulty' | 'time'> & { tags: string[] },
+  input: Pick<RecipeWeb, 'name' | 'ingredients' | 'steps' | 'difficulty' | 'time'> & { tags: string[]; isPublic?: boolean },
   tags: RecipeTagWeb[],
   base?: Partial<RecipeWeb> & { id?: string }
 ): RecipeWeb => {
@@ -68,6 +68,7 @@ export const buildOptimisticRecipe = (
     steps: input.steps,
     difficulty: input.difficulty,
     time: input.time,
+    isPublic: input.isPublic ?? true,
     tags: input.tags
       .map((id) => tags.find((tag) => tag.id === id))
       .filter((tag): tag is RecipeTagWeb => !!tag)

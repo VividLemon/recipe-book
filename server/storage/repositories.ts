@@ -1,5 +1,6 @@
 import type { RecipeData } from '../recipes/types'
 import type { RecipeTagData } from '../recipe-tags/types'
+import type { UserData } from '../users/types'
 import { normalizeStorageError, type DocumentEngine, type DocumentPage, type DocumentQuery, type FileEngine } from './contracts'
 
 export class DocumentRepository<T extends { id: string }> {
@@ -34,5 +35,6 @@ export class DocumentRepository<T extends { id: string }> {
 export interface StorageRepositories {
   recipes: DocumentRepository<RecipeData>
   recipeTags: DocumentRepository<RecipeTagData>
+  users: DocumentRepository<UserData>
   photos: FileEngine
 }

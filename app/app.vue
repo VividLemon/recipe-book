@@ -45,6 +45,9 @@
           </BOffcanvas>
         </BCol>
         <BCol style="overflow-y: auto; height: 100vh" class="me-0 pe-0">
+          <BRow class="px-3 pt-2">
+            <BCol><AccountAccountMenu /></BCol>
+          </BRow>
           <NuxtPage />
         </BCol>
       </BRow>
@@ -62,10 +65,11 @@ provideSystemSettings()
 configureVeeValidate()
 
 const offcanvas = ref(false)
+const { loggedIn } = useUserSession()
 
-const items = [
+const items = computed(() => [
   { title: 'Home', to: '/' },
-  { title: 'Create Recipe', to: '/recipes/create' },
+  ...(loggedIn.value ? [{ title: 'Create Recipe', to: '/recipes/create' }] : []),
   { title: 'Settings', to: '/settings' }
-] as const
+])
 </script>

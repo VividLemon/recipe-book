@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@nuxtjs/color-mode',
     '@nuxtjs/i18n',
+    'nuxt-auth-utils',
     '@pinia/colada-nuxt',
     '@pinia/nuxt',
     '@vee-validate/nuxt',
@@ -38,7 +39,8 @@ export default defineNuxtConfig({
       uri: '',
       database: 'recipe-book',
       recipesCollection: 'recipes',
-      recipeTagsCollection: 'recipeTags'
+      recipeTagsCollection: 'recipeTags',
+      usersCollection: 'users'
     }
   },
 

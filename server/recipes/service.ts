@@ -21,7 +21,7 @@ import { consola } from 'consola'
 import { notFoundError } from '../utils/errors'
 import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
 
-export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeData> => {
+export const createRecipe = async (input: CreateRecipeRequest, ownerId: string): Promise<RecipeData> => {
   const { coverImage: file, ...rest } = input
 
   const photoResult = file ? await processPhotoWithThumbnail(file) : undefined
@@ -29,6 +29,8 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
 
   const recipe: RecipeData = {
     ...rest,
+    ownerId,
+    isPublic: rest.isPublic ?? true,
     id: v7(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -56,12 +58,13 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
 
 export const updateRecipe = async (
   id: string,
-  input: UpdateRecipeRequest
+  input: UpdateRecipeRequest,
+  ownerId: string
 ) => {
   const { coverImage: file, ...rest } = input
 
   const previous = await useRecipeRepository().get(id)
-  if (!previous) throw notFoundError
+  if (!previous || previous.ownerId !== ownerId) throw notFoundError
 
   const photo = file ? await processPhotoWithThumbnail(file) : undefined
   if (photo?.error) throw photo.error
@@ -69,6 +72,7 @@ export const updateRecipe = async (
   const recipe: RecipeData = {
     ...previous,
     ...rest,
+    isPublic: rest.isPublic ?? previous.isPublic !== false,
     updatedAt: Date.now(),
     ingredients: rest.ingredients.map(mapIngredientWebToData),
     difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
@@ -170,5 +174,26 @@ export const addOrphanedStepPhoto = async ({
 export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeData) =>
   deletePhotos(listRemovedRecipePhotoUrls({ previous, next }))
 
-export const listRecipes = async (query: ListRecipesApiQuery = {}) =>
-  queryRecipes(await useRecipeRepository().list(), query)
+export const listRecipes = async (
+  query: ListRecipesApiQuery = {},
+  userId?: string,
+  favoriteIds: string[] = []
+) => {
+  const recipes = (await useRecipeRepository().list()).filter((recipe) =>
+    recipe.isPublic !== false || (!!userId && recipe.ownerId === userId)
+  )
+  return queryRecipes(recipes, query, favoriteIds)
+}
+
+export const getAccessibleRecipe = async (id: string, userId?: string) => {
+  const recipe = await useRecipeRepository().get(id)
+  if (!recipe || (recipe.isPublic === false && recipe.ownerId !== userId)) return null
+  return recipe
+}
+
+export const deleteRecipe = async (id: string, ownerId: string) => {
+  const recipe = await useRecipeRepository().get(id)
+  if (!recipe || recipe.ownerId !== ownerId) throw notFoundError
+  await useRecipeRepository().remove(id)
+  return recipe
+}

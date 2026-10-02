@@ -4,8 +4,10 @@ import { recipePhotos } from '../../../utils/validation'
 import {
   addOrphanedStepPhoto,
 } from '../../../recipes/service';
+import { useRecipeRepository } from '../../../recipes/repository'
 
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const [parsed, query] = await Promise.all([
     readMultipartFormData(event)
       .then((raw) => {
@@ -19,6 +21,11 @@ export default defineEventHandler(async (event) => {
 
     getValidatedQuery(event, recipePhotos.createCover.query.parseAsync)
   ])
+
+  if (query?.id) {
+    const recipe = await useRecipeRepository().get(query.id)
+    if (!recipe || recipe.ownerId !== user.id) throw notFoundError
+  }
 
   const photoUrl = await addOrphanedStepPhoto({
     file: parsed.file,

@@ -11,7 +11,7 @@
       <div class="ms-auto d-flex align-items-center">
         <template v-if="readableRecipe">
           <BButton
-            :disabled="previewMode"
+            v-if="isOwner && !previewMode"
             :variant="null"
             :to="
               readableRecipe.id
@@ -22,7 +22,11 @@
           >
             <PencilIcon />
           </BButton>
-          <BButton :variant="null" @click="toggleFavorite(readableRecipe.id)">
+          <BButton
+            :variant="null"
+            :to="loggedIn ? undefined : '/login'"
+            @click="loggedIn && toggleFavorite(readableRecipe.id)"
+          >
             <RecipesFavoriteStarIcon
               :id="readableRecipe.id"
               aria-label="Toggle favorite recipe"
@@ -140,6 +144,7 @@ const open = defineModel<boolean>({
 })
 
 const { toggleFavorite } = useFavoriteRecipe()
+const { loggedIn, user } = useUserSession()
 
 const coverImageSources = computed(() =>
   readableRecipe.value?.photos?.coverImage?.default ?? null
@@ -148,6 +153,7 @@ const coverImageSources = computed(() =>
 const readableRecipe = computed(() =>
   props.recipe === null ? null : mapRecipeToHumanReadable(props.recipe)
 )
+const isOwner = computed(() => !!user.value && props.recipe?.ownerId === user.value.id)
 
 const systemSettings = useSystemSettings()
 

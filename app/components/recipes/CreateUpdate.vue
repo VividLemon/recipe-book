@@ -19,6 +19,13 @@
     </BRow>
     <BRow>
       <BCol>
+        <BFormCheckbox v-model="recipe.isPublic">
+          Public recipe (visible to everyone)
+        </BFormCheckbox>
+      </BCol>
+    </BRow>
+    <BRow>
+      <BCol>
         <BFormTags
           :model-value="ingredients.map((el) => el.name)"
           placeholder="Ingredients"
@@ -191,7 +198,7 @@ const recipeTagOptions = computed(() => recipeTags.data.value || [])
 
 export type CreateRecipeModel = Omit<
   CreateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'difficulty' | 'time' | 'coverImage'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string
@@ -199,7 +206,7 @@ export type CreateRecipeModel = Omit<
 }
 export type UpdateRecipeModel = (Omit<
   UpdateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'difficulty' | 'time' | 'coverImage'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string
