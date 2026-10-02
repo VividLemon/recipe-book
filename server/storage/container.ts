@@ -4,11 +4,9 @@ import { FilesystemDocumentEngine } from './documents/filesystem'
 import { MemoryDocumentEngine } from './documents/memory'
 import { FilesystemFileEngine } from './filesystem'
 import { MemoryFileEngine } from './memory-file'
-import type { StorageRepositories } from './repositories'
+import { DocumentRepository, type StorageRepositories } from './repositories'
 import type { DocumentEngine, FileEngine } from './contracts'
 import { StorageError } from './contracts'
-import { createRecipeRepository } from '../recipes/repository'
-import { createRecipeTagRepository } from '../recipe-tags/repository'
 import { MongoClient } from 'mongodb'
 import { MongoDocumentEngine } from './documents/mongo'
 
@@ -59,8 +57,8 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
     memory: () => new MemoryFileEngine(),
     filesystem: () => new FilesystemFileEngine(`${directory}/photos`)
   } as const
-  const recipes = createRecipeRepository(recipeEngine)
-  const tags = createRecipeTagRepository(tagEngine)
+  const recipes = new DocumentRepository<RecipeData>(recipeEngine)
+  const tags = new DocumentRepository<RecipeTagData>(tagEngine)
   const photos = options.photos ?? fileEngines[fileBackend]()
   return { recipes, recipeTags: tags, photos }
 }
