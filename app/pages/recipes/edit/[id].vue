@@ -8,6 +8,7 @@
 </template>
 
 <script setup lang="ts">
+import { buildOptimisticRecipe } from '~/queries/recipeCache'
 import type { UpdateRecipeModel } from '../../../components/recipes/CreateUpdate.vue'
 
 const route = useRoute()
@@ -16,6 +17,8 @@ const id = computed(() => route.params.id as string)
 const router = useRouter()
 const toaster = useToaster()
 const previousRecipe = await useFetch(`/api/recipes/${id.value}`)
+const recipeTags = await useFetch('/api/recipe-tags')
+const { update, remove } = useRecipeMutations()
 
 if (!previousRecipe.data.value) {
   await router.push('/')
@@ -51,9 +54,14 @@ const save = async () => {
       files: { coverImage }
     })
 
-    await $fetch(`/api/recipes/${id.value}`, {
-      method: 'PUT',
-      body
+    await update.mutateAsync({
+      id: id.value,
+      body,
+      optimistic: buildOptimisticRecipe(
+        { ...rest, difficulty: rest.difficulty!, time: Number.parseInt(rest.time || '') },
+        recipeTags.data.value ?? [],
+        previousRecipe.data.value ?? { id: id.value }
+      )
     })
 
     await pushToRoot.execute(id.value)
@@ -74,9 +82,7 @@ const deleteRecipe = async () => {
     }).show()
     if (!('id' in updateRecipe.value) || !resp.ok) return
     loading.value = true
-    await $fetch(`/api/recipes/${updateRecipe.value.id}`, {
-      method: 'DELETE'
-    })
+    await remove.mutateAsync({ id: updateRecipe.value.id })
     await router.push({
       path: '/'
     })
