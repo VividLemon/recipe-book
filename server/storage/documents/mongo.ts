@@ -7,7 +7,7 @@ export class MongoDocumentEngine<T> implements DocumentEngine<T> {
   constructor(private readonly collection: Collection<StoredDocument<T>>) {}
 
   async get(id: StorageId) {
-    const document = await this.collection.findOne({ _id: id })
+    const document = await this.collection.findOne({ _id: id } as Filter<StoredDocument<T>>)
     if (!document) return null
     const { _id: _ignored, ...value } = document
     return value as T
@@ -31,10 +31,10 @@ export class MongoDocumentEngine<T> implements DocumentEngine<T> {
   }
 
   async set(id: StorageId, value: T) {
-    await this.collection.replaceOne({ _id: id }, { ...value, _id: id }, { upsert: true })
+    await this.collection.replaceOne({ _id: id } as Filter<StoredDocument<T>>, { ...value, _id: id }, { upsert: true })
   }
 
   async remove(id: StorageId) {
-    await this.collection.deleteOne({ _id: id })
+    await this.collection.deleteOne({ _id: id } as Filter<StoredDocument<T>>)
   }
 }

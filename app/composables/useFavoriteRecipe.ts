@@ -1,11 +1,14 @@
 import { useQueryCache } from '@pinia/colada'
 import { recipeKeys } from '~/queries/recipes'
+import { updateFavoriteIds } from '~/utils/favorites'
 
 export const useFavoriteRecipe = () => {
   const favorites = useState<string[]>('recipe-favorites', () => [])
   const loadedForUser = useState<string | null>('recipe-favorites-user', () => null)
+  const loadingForUser = useState<string | null>('recipe-favorites-loading-user', () => null)
   const { loggedIn, user } = useUserSession()
   const queryCache = useQueryCache()
+  const requestFetch = useRequestFetch()
 
   const hasFavorite = (id: string) => favorites.value.includes(id)
 
@@ -15,9 +18,16 @@ export const useFavoriteRecipe = () => {
       loadedForUser.value = null
       return
     }
-    if (!force && loadedForUser.value === user.value.id) return
-    favorites.value = await $fetch<string[]>('/api/user/favorites')
-    loadedForUser.value = user.value.id
+    if ((!force && loadedForUser.value === user.value.id) || loadingForUser.value === user.value.id) return
+    loadingForUser.value = user.value.id
+    try {
+      favorites.value = await requestFetch<string[]>('/api/user/favorites')
+      loadedForUser.value = user.value.id
+    } catch (error) {
+      await using _ = await useToaster().apiError(error)
+    } finally {
+      loadingForUser.value = null
+    }
   }
 
   const toggleFavorite = async (id: string) => {
@@ -27,13 +37,11 @@ export const useFavoriteRecipe = () => {
     }
     const previous = favorites.value
     const shouldFavorite = !hasFavorite(id)
-    favorites.value = shouldFavorite
-      ? [...previous, id]
-      : previous.filter((favoriteId) => favoriteId !== id)
+    favorites.value = updateFavoriteIds(previous, id, shouldFavorite)
     loadedForUser.value = user.value.id
 
     try {
-      favorites.value = await $fetch<string[]>('/api/user/favorites', {
+      favorites.value = await requestFetch<string[]>('/api/user/favorites', {
         method: 'PUT',
         body: { recipeId: id, favorite: shouldFavorite }
       })
@@ -44,7 +52,7 @@ export const useFavoriteRecipe = () => {
     }
   }
 
-  watch(loggedIn, () => refreshFavorites(true))
+  watch([loggedIn, () => user.value?.id], () => refreshFavorites(true), { immediate: true })
 
   return {
     favorites: readonly(favorites),

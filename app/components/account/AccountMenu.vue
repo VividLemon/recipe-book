@@ -24,10 +24,12 @@
 import PersonCircleIcon from '~icons/bi/person-circle'
 
 const { loggedIn, user, clear } = useUserSession()
+const clearRecipeCache = useRecipeSessionCache()
 
 const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await clear()
+  clearRecipeCache()
   await navigateTo('/login')
 }
 </script>

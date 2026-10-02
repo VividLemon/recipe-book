@@ -3,7 +3,7 @@ import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
 import { photoMimeTypes } from '../../photos/utils'
 import { useRecipeRepository } from '../../recipes/repository'
-import { listImageVariantUrls } from '~/utils/photoVariants'
+import { canAccessPhoto } from '../../photos/access'
 
 /**
  * Serves a photo out of the configured file engine. Since the storage backend is
@@ -22,22 +22,13 @@ export default defineEventHandler(async (event) => {
     getUserSession(event),
     useRecipeRepository().list()
   ])
-  const matchingRecipes = recipes.filter((recipe) => [
-    ...listImageVariantUrls(recipe.photos?.coverImage?.default),
-    ...listImageVariantUrls(recipe.photos?.coverImage?.thumbnail),
-    ...(recipe.photos?.stepsImages ?? [])
-  ].includes(photoUrl))
-  const isPublic = matchingRecipes.some((recipe) => recipe.isPublic !== false)
-  if (matchingRecipes.length && !isPublic
-    && !matchingRecipes.some((recipe) => recipe.ownerId === session.user?.id)) {
-    throw notFoundError
-  }
+  if (!canAccessPhoto(recipes, photoUrl, session.user?.id)) throw notFoundError
 
   const extension = name.split('.').pop()?.toLowerCase()
   const source = await usePhotoFiles().getStream(name)
   if (!source) throw notFoundError
 
-  setResponseHeader(event, 'Cache-Control', isPublic || !matchingRecipes.length ? 'public, max-age=300' : 'private, no-store')
+  setResponseHeader(event, 'Cache-Control', 'private, no-store')
   setResponseHeader(
     event,
     'Content-Type',

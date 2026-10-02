@@ -25,6 +25,7 @@ const credentials = reactive({ username: '', email: '', password: '' })
 const error = ref('')
 const loading = ref(false)
 const { fetch: refreshSession } = useUserSession()
+const clearRecipeCache = useRecipeSessionCache()
 
 const register = async () => {
   error.value = ''
@@ -32,6 +33,7 @@ const register = async () => {
   try {
     await $fetch('/api/auth/register', { method: 'POST', body: credentials })
     await refreshSession()
+    clearRecipeCache()
     await navigateTo('/')
   } catch {
     error.value = 'Unable to create an account. The username or email may already be in use.'

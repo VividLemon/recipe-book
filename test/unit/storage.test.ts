@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MemoryDocumentEngine } from '../../server/storage/documents/memory'
 import { MemoryFileEngine } from '../../server/storage/memory-file'
 import { StorageError } from '../../server/storage/contracts'
+import { createStorageRepositories } from '../../server/storage/container'
 
 describe('storage engines', () => {
   it('supports filtering and pagination in memory', async () => {
@@ -23,5 +24,22 @@ describe('storage engines', () => {
     await expect(Promise.resolve().then(() => engine.get('../secret'))).rejects.toBeInstanceOf(StorageError)
     await engine.remove('images/one.bin')
     expect(await engine.get('images/one.bin')).toBeNull()
+  })
+
+  it('stores account records in the configured document backend', async () => {
+    const repositories = createStorageRepositories({
+      documentBackend: 'memory',
+      fileBackend: 'memory'
+    })
+    const user = {
+      id: 'user-1',
+      username: 'recipe-user',
+      email: 'recipe@example.test',
+      passwordHash: 'scrypt-hash',
+      favorites: ['recipe-1']
+    }
+
+    await repositories.users.set(user)
+    expect(await repositories.users.get(user.id)).toEqual(user)
   })
 })

@@ -20,6 +20,7 @@ import { v7 } from 'uuid'
 import { consola } from 'consola'
 import { notFoundError } from '../utils/errors'
 import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
+import { canAccessRecipe, canManageRecipe } from './access'
 
 export const createRecipe = async (input: CreateRecipeRequest, ownerId: string): Promise<RecipeData> => {
   const { coverImage: file, ...rest } = input
@@ -64,7 +65,7 @@ export const updateRecipe = async (
   const { coverImage: file, ...rest } = input
 
   const previous = await useRecipeRepository().get(id)
-  if (!previous || previous.ownerId !== ownerId) throw notFoundError
+  if (!previous || !canManageRecipe(previous, ownerId)) throw notFoundError
 
   const photo = file ? await processPhotoWithThumbnail(file) : undefined
   if (photo?.error) throw photo.error
@@ -180,20 +181,20 @@ export const listRecipes = async (
   favoriteIds: string[] = []
 ) => {
   const recipes = (await useRecipeRepository().list()).filter((recipe) =>
-    recipe.isPublic !== false || (!!userId && recipe.ownerId === userId)
+    canAccessRecipe(recipe, userId)
   )
   return queryRecipes(recipes, query, favoriteIds)
 }
 
 export const getAccessibleRecipe = async (id: string, userId?: string) => {
   const recipe = await useRecipeRepository().get(id)
-  if (!recipe || (recipe.isPublic === false && recipe.ownerId !== userId)) return null
+  if (!recipe || !canAccessRecipe(recipe, userId)) return null
   return recipe
 }
 
 export const deleteRecipe = async (id: string, ownerId: string) => {
   const recipe = await useRecipeRepository().get(id)
-  if (!recipe || recipe.ownerId !== ownerId) throw notFoundError
+  if (!recipe || !canManageRecipe(recipe, ownerId)) throw notFoundError
   await useRecipeRepository().remove(id)
   return recipe
 }

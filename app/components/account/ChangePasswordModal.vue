@@ -1,7 +1,7 @@
 <template>
-  <BModal v-model="open" title="Change password" ok-title="Update password" @ok="submit">
+  <BModal v-model="open" title="Change password" no-footer>
     <BAlert v-if="error" :model-value="true" variant="danger">{{ error }}</BAlert>
-    <BForm @submit.prevent="submit">
+    <BForm id="change-password-form" @submit.prevent="submit">
       <BFormGroup label="Old password" label-for="old-password">
         <BFormInput id="old-password" v-model="oldPassword" type="password" required autocomplete="current-password" />
       </BFormGroup>
@@ -14,8 +14,13 @@
           Passwords must match.
         </BFormInvalidFeedback>
       </BFormGroup>
-      <BButton class="d-none" type="submit" />
     </BForm>
+    <template #footer>
+      <BButton variant="secondary" @click="open = false">Cancel</BButton>
+      <BButton type="submit" form="change-password-form" variant="primary" :disabled="loading">
+        {{ loading ? 'Updating…' : 'Update password' }}
+      </BButton>
+    </template>
   </BModal>
 </template>
 

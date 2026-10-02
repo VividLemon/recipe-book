@@ -1,6 +1,6 @@
 import { recipes } from '../../utils/validation'
 import { consola } from 'consola'
-import { deleteRecipePhotos } from '#server/photos/operations.ts';
+import { deleteRecipePhotoData } from '#server/photos/operations.ts';
 import { deleteRecipe } from '#server/recipes/service.ts';
 
 export default defineEventHandler(async (event) => {
@@ -9,10 +9,9 @@ export default defineEventHandler(async (event) => {
     event,
     recipes.delete.params.parse
   )
-  event.waitUntil(deleteRecipePhotos(id).catch((e) => {
+  const deletedRecipe = await deleteRecipe(id, user.id)
+  event.waitUntil(deleteRecipePhotoData(deletedRecipe).catch((e) => {
     consola.error('Cleanup deleted recipe photos exited with error:', e)
   }))
-
-  await deleteRecipe(id, user.id)
   setResponseStatus(event, 204)
 })

@@ -22,6 +22,7 @@ const credentials = reactive({ email: '', password: '' })
 const error = ref('')
 const loading = ref(false)
 const { fetch: refreshSession } = useUserSession()
+const clearRecipeCache = useRecipeSessionCache()
 
 const login = async () => {
   error.value = ''
@@ -29,6 +30,7 @@ const login = async () => {
   try {
     await $fetch('/api/auth/login', { method: 'POST', body: credentials })
     await refreshSession()
+    clearRecipeCache()
     await navigateTo('/')
   } catch {
     error.value = 'Unable to log in with those credentials.'

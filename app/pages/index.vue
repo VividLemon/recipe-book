@@ -143,9 +143,7 @@ import {
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
 import type { RecipeListSortBy } from '~/utils/recipeQuery'
-import { fetchRecipe } from '~/queries/recipes'
 
-const { hasFavorite } = useFavoriteRecipe()
 const { loggedIn } = useUserSession()
 
 const tableModes = ['Grid', 'Table'] as const
@@ -191,6 +189,7 @@ const recipeTagOptions = computed(() => [
 ])
 
 const recipes = useRecipeList(query)
+const requestFetch = useRequestFetch()
 
 const computedRecipes = computed<RecipeWeb[]>(() => recipes.items.value)
 
@@ -210,7 +209,7 @@ const currentRecipe = ref<RecipeWeb | null>(null)
 const onOpenRecipe = async (id: string) => {
   currentRecipe.value =
     recipes.items.value.find((el) => el.id === id)
-    || (await fetchRecipe(id).catch(() => null))
+    || (await requestFetch(`/api/recipes/${id}`).catch(() => null))
   if (currentRecipe.value) {
     openRecipe.value = true
   }

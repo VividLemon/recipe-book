@@ -91,13 +91,13 @@
                   v-for="{ name, quantity, unit } in readableRecipe.ingredients"
                   :key="name"
                 >
-                  {{ name }} ({{ quantity }} {{ unit || ingredientUnitsWeb[0] }})
+                  {{ name }} ({{ quantity }} {{ unit || defaultIngredientUnit }})
                 </li>
               </ul>
               <div v-else>
                 {{
                   readableRecipe.ingredients
-                    .map(({ name: n, quantity, unit }) => `${n} (${quantity} ${unit || ingredientUnitsWeb[0]})`)
+                    .map(({ name: n, quantity, unit }) => `${n} (${quantity} ${unit || defaultIngredientUnit})`)
                     .join(', ')
                 }}
               </div>
@@ -130,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ingredientUnitsWeb, type ReadRecipeResponse } from '../../../types/recipe'
+import { type IngredientUnitWeb, type ReadRecipeResponse } from '../../../types/recipe'
 import InfoIcon from '~icons/bi/file-earmark-arrow-down'
 import PencilIcon from '~icons/bi/pencil'
 
@@ -145,6 +145,7 @@ const open = defineModel<boolean>({
 
 const { toggleFavorite } = useFavoriteRecipe()
 const { loggedIn, user } = useUserSession()
+const defaultIngredientUnit: IngredientUnitWeb = 'units'
 
 const coverImageSources = computed(() =>
   readableRecipe.value?.photos?.coverImage?.default ?? null
