@@ -1,7 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
-import { PHOTO_MIME_TYPES } from '../../photos/utils'
+import { photoMimeTypes } from '../../photos/utils'
 
 /**
  * Serves a photo out of the configured file engine. Since the storage backend is
@@ -19,22 +19,11 @@ export default defineEventHandler(async (event) => {
   const source = await usePhotoFiles().getStream(name)
   if (!source) throw notFoundError
 
-  // Tee the storage stream so type detection cannot consume the response body.
-  const response = new PassThrough()
-  const detection = new PassThrough()
-  source.on('error', (error) => {
-    response.destroy(error)
-    detection.destroy(error)
-  })
-  source.pipe(response)
-  source.pipe(detection)
-  const detectedType = await fileTypeFromStream(detection).catch(() => undefined)
+  setResponseHeader(event, 'Cache-Control', 'public, max-age=300')
   setResponseHeader(
     event,
     'Content-Type',
-    detectedType?.mime ?? PHOTO_MIME_TYPES[extension as keyof typeof PHOTO_MIME_TYPES] ??
-      'application/octet-stream'
+    photoMimeTypes[extension as keyof typeof photoMimeTypes] ?? 'application/octet-stream'
   )
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
-  return response
+  return source
 })

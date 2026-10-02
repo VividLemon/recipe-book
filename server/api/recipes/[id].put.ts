@@ -1,16 +1,34 @@
 import { deserializeFormData } from '~/utils/serialization'
-import { updateRecipe } from '../../recipes/service'
+import {
+  cleanupReplacedRecipePhotos,
+  updateRecipe,
+} from '../../recipes/service';
 import { recipes } from '../../utils/validation'
+import { consola } from 'consola';
 
 export default defineEventHandler(async (event) => {
-  const [{ id }, raw] = await Promise.all([
-    getValidatedRouterParams(event, recipes.update.params.parse),
+  const [parsed, { id }] = await Promise.all([
     readMultipartFormData(event)
+      .then((raw) => {
+        if(!raw) throw noDataError
+        return recipes.update.body.safeParseAsync(deserializeFormData(raw))
+      })
+      .then((result) => {
+        if(result.error) throw validationError(result.error)
+        return result.data
+      }),
+
+    getValidatedRouterParams(event, recipes.update.params.parse),
   ])
-  if (!raw) throw noDataError
-  const parsed = deserializeFormData(raw)
-  const z = await recipes.update.body.safeParseAsync(parsed)
-  if (z.error) throw validationError(z.error)
-  await updateRecipe(id, z.data)
+
+  const {newRecipe, previousRecipe} = await updateRecipe(id, parsed)
+
+  // Cleanup previous recipe photos if a new cover image was uploaded
+  if (parsed.coverImage) {
+    event.waitUntil(cleanupReplacedRecipePhotos(previousRecipe, newRecipe).catch((e) => {
+      consola.error('Cleanup previous photos exited with error:', e)
+    }))
+  }
+
   setResponseStatus(event, 204)
 })

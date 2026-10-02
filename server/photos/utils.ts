@@ -1,4 +1,4 @@
-export const PHOTO_MIME_TYPES = {
+export const photoMimeTypes = {
   avif: 'image/avif',
   webp: 'image/webp',
   jpg: 'image/jpeg',

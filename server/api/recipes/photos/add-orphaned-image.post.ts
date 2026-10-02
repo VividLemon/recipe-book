@@ -1,36 +1,31 @@
-import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
-import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
-import { processPhoto } from '../../../photos/operations'
+import { stringBooleanToBoolean } from '~/utils/shared'
 import { recipePhotos } from '../../../utils/validation'
-import { addStepPhoto, getRecipe } from '../../../recipes/service'
+import {
+  addOrphanedStepPhoto,
+} from '../../../recipes/service';
 
 export default defineEventHandler(async (event) => {
-  const [raw, query] = await Promise.all([
-    readMultipartFormData(event),
-    getValidatedQuery(event, recipePhotos.createCover.query.parse)
+  const [parsed, query] = await Promise.all([
+    readMultipartFormData(event)
+      .then((raw) => {
+        if (!raw) throw noDataError
+        return recipePhotos.createCover.body.safeParseAsync(deserializeFormData(raw))
+      })
+      .then((result) => {
+        if (result.error) throw validationError(result.error)
+        return result.data
+      }),
+
+    getValidatedQuery(event, recipePhotos.createCover.query.parseAsync)
   ])
-  if (!raw) throw noDataError
-  const parsed = deserializeFormData(raw)
-  const z = await recipePhotos.createCover.body.safeParseAsync(parsed)
-  if (z.error) throw validationError(z.error)
-  const { file } = z.data
-  let previousRecipe: RecipeData | null = null
-  if (query?.id) {
-    previousRecipe = await getRecipe(query.id)
-    if (!previousRecipe) throw notFoundError
-  }
 
-  const { photo, error } = await processPhoto(file, {
-    maximumDimensions: maximumRecipeStepsPhotoDimensions,
-    preserveAspectRatio: query?.preserveAspectRatio ? stringBooleanToBoolean(query?.preserveAspectRatio) : undefined
+  const photoUrl = await addOrphanedStepPhoto({
+    file: parsed.file,
+    recipeId: query?.id,
+    preserveAspectRatio: query?.preserveAspectRatio ? stringBooleanToBoolean(query.preserveAspectRatio) : undefined,
   })
-  if (error || !photo) throw error
-
-  if (previousRecipe) {
-    await addStepPhoto(previousRecipe, photo)
-  }
 
   setResponseStatus(event, 201)
-  return { url: photo }
+  return { url: photoUrl }
 })

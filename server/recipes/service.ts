@@ -3,8 +3,8 @@ import { useRecipeRepository } from './repository'
 import {
   deletePhoto,
   deletePhotos,
-  deleteRecipePhotos,
   listRemovedRecipePhotoUrls,
+  processPhoto,
   processPhotoWithThumbnail
 } from '../photos/operations'
 import { listImageVariantUrls } from '~/utils/photoVariants'
@@ -13,21 +13,13 @@ import sanitizeHtml from 'sanitize-html'
 import { v7 } from 'uuid'
 import { consola } from 'consola'
 import { notFoundError } from '../utils/errors'
-
-export const getAllRecipes = async (): Promise<RecipeData[]> =>
-  useRecipeRepository().list()
-
-export const getRecipe = async (id: string): Promise<RecipeData | null> =>
-  useRecipeRepository().get(id)
+import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
 
 export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeData> => {
   const { coverImage: file, ...rest } = input
-  const photoResult = file
-    ? await Promise.allSettled([processPhotoWithThumbnail(file)])
-    : []
-  const processed = photoResult[0]?.status === 'fulfilled' ? photoResult[0].value : undefined
-  if (photoResult[0]?.status === 'rejected') throw photoResult[0].reason
-  if (processed?.error) throw processed.error
+
+  const photoResult = file ? await processPhotoWithThumbnail(file) : undefined
+  if (photoResult?.error) throw photoResult.error
 
   const recipe: RecipeData = {
     ...rest,
@@ -37,35 +29,36 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
     ingredients: rest.ingredients.map(mapIngredientWebToData),
     difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
     steps: sanitizeHtml(rest.steps),
-    photos: processed?.photos || rest.stepsImages
+    photos: photoResult?.photos || rest.stepsImages
       ? {
-          ...(processed?.photos ? { coverImage: processed.photos } : {}),
+          ...(photoResult?.photos ? { coverImage: photoResult.photos } : {}),
           ...(rest.stepsImages ? { stepsImages: rest.stepsImages } : {})
         }
       : undefined
   }
-  const persistence = await Promise.allSettled([useRecipeRepository().set(recipe)])
-  if (persistence[0].status === 'rejected') {
-    if (processed?.photos) await cleanupUploadedCoverImage(processed.photos)
-    throw persistence[0].reason
+
+  try {
+    await useRecipeRepository().set(recipe)
   }
+  catch (e) {
+    if (photoResult?.photos) await cleanupUploadedCoverImage(photoResult.photos)
+    throw e
+  }
+
   return recipe
 }
 
 export const updateRecipe = async (
   id: string,
   input: UpdateRecipeRequest
-): Promise<RecipeData> => {
-  const previous = await getRecipe(id)
+) => {
+  const { coverImage: file, ...rest } = input
+
+  const previous = await useRecipeRepository().get(id)
   if (!previous) throw notFoundError
 
-  const { coverImage: file, ...rest } = input
-  const photoResult = file
-    ? await Promise.allSettled([processPhotoWithThumbnail(file)])
-    : []
-  const processed = photoResult[0]?.status === 'fulfilled' ? photoResult[0].value : undefined
-  if (photoResult[0]?.status === 'rejected') throw photoResult[0].reason
-  if (processed?.error) throw processed.error
+  const photo = file ? await processPhotoWithThumbnail(file) : undefined
+  if (photo?.error) throw photo.error
 
   const recipe: RecipeData = {
     ...previous,
@@ -75,34 +68,31 @@ export const updateRecipe = async (
     difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
     steps: sanitizeHtml(rest.steps),
     photos: file
-      ? { ...previous.photos, ...(processed?.photos ? { coverImage: processed.photos } : {}) }
+      ? { ...previous.photos, ...(photo?.photos ? { coverImage: photo.photos } : {}) }
       : previous.photos
   }
-  const persistence = await Promise.allSettled([useRecipeRepository().set(recipe)])
-  if (persistence[0].status === 'rejected') {
-    if (processed?.photos) await cleanupUploadedCoverImage(processed.photos)
-    throw persistence[0].reason
+
+  try {
+    await useRecipeRepository().set(recipe)
   }
-  if (file) {
-    const cleanup = await Promise.allSettled([cleanupReplacedRecipePhotos(previous, recipe)])
-    if (cleanup[0].status === 'rejected')
-      consola.error('Cleanup previous photos exited with error:', cleanup[0].reason)
+  catch (e) {
+    if (photo?.photos) await cleanupUploadedCoverImage(photo.photos)
+    throw e
   }
-  return recipe
+
+  return { newRecipe: recipe, previousRecipe: previous }
 }
 
 const cleanupUploadedCoverImage = async (photos: NonNullable<RecipeData['photos']>['coverImage']) => {
   const results = await Promise.allSettled(
-    listImageVariantUrls(photos?.default).concat(listImageVariantUrls(photos?.thumbnail))
-      .map((photo) => deletePhoto(photo))
+    [...listImageVariantUrls(photos?.default), ...listImageVariantUrls(photos?.thumbnail)].map((photo) => deletePhoto(photo))
   )
-  results.filter((result) => result.status === 'rejected').forEach((result) => {
-    consola.error('Failed to clean up uploaded cover image:', result.reason)
+  results.forEach((result) => {
+    if (result.status === 'rejected') {
+      consola.error('Failed to clean up uploaded cover image:', result.reason)
+    }
   })
 }
-
-export const deleteRecipe = async (id: string) =>
-  useRecipeRepository().remove(id)
 
 export const addStepPhoto = async (recipe: RecipeData, photo: string) =>
   useRecipeRepository().set({
@@ -113,7 +103,63 @@ export const addStepPhoto = async (recipe: RecipeData, photo: string) =>
     }
   })
 
-export const cleanupRecipePhotos = (id: string) => deleteRecipePhotos(id)
+export const addOrphanedStepPhoto = async ({
+  file,
+  recipeId,
+  preserveAspectRatio
+}: {
+  file: Buffer
+  recipeId?: string
+  preserveAspectRatio?: boolean
+}): Promise<string> => {
+  const [recipeResult, photoResult] = await Promise.allSettled([
+    recipeId ? useRecipeRepository().get(recipeId) : Promise.resolve(null),
+    processPhoto(file, {
+      maximumDimensions: maximumRecipeStepsPhotoDimensions,
+      preserveAspectRatio: preserveAspectRatio,
+    }),
+  ])
+
+  const previousRecipe =
+    recipeResult.status === "fulfilled" ? recipeResult.value : null
+
+  const photoResultValue =
+    photoResult.status === "fulfilled" ? photoResult.value : null
+
+// If photo processing itself threw, propagate that error.
+  if (photoResult.status === "rejected") {
+    throw photoResult.reason
+  }
+
+  const { photo: photoUrl, error: photoError } = photoResult.value
+
+// If getRecipe threw, clean up the photo before propagating the error.
+  if (recipeResult.status === "rejected") {
+    if (photoUrl) await deletePhoto(photoUrl)
+    throw recipeResult.reason
+  }
+
+  if (photoError || !photoUrl) {
+    throw photoError
+  }
+
+// A recipe ID was supplied but the recipe doesn't exist.
+  if (recipeId && !previousRecipe) {
+    await deletePhoto(photoUrl)
+    throw notFoundError
+  }
+
+  if (previousRecipe) {
+    try {
+      await addStepPhoto(previousRecipe, photoUrl)
+    } catch (error) {
+      await deletePhoto(photoUrl)
+      throw error
+    }
+  }
+
+  return photoUrl
+}
 
 export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeData) =>
   deletePhotos(listRemovedRecipePhotoUrls({ previous, next }))

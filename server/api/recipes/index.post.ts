@@ -2,11 +2,17 @@ import { deserializeFormData } from '~/utils/serialization'
 import { createRecipe } from '../../recipes/service'
 
 export default defineEventHandler(async (event) => {
-  const raw = await readMultipartFormData(event)
-  if (!raw) throw noDataError
-  const parsed = deserializeFormData(raw)
-  const z = await recipes.create.body.safeParseAsync(parsed)
-  if (z.error) throw validationError(z.error)
-  await createRecipe(z.data)
+  const parsed = await
+    (readMultipartFormData(event)
+      .then((raw) => {
+        if (!raw) throw noDataError
+        return recipes.create.body.safeParseAsync(deserializeFormData(raw))
+      })
+      .then((result) => {
+        if (result.error) throw validationError(result.error)
+        return result.data
+      }))
+
+  await createRecipe(parsed)
   setResponseStatus(event, 201)
 })
