@@ -2,6 +2,8 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
 import type { ConfigOptions } from '@nuxt/test-utils/playwright'
 
+process.env.NUXT_SESSION_PASSWORD ??= 'recipe-book-test-session-password-at-least-32-characters'
+
 export default defineConfig<ConfigOptions>({
   testDir: './test/e2e',
   fullyParallel: true,

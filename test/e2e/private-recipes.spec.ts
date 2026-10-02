@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@nuxt/test-utils/playwright'
 import sharp from 'sharp'
 
 const recipeBody = (isPublic: boolean, stepsImages: string[] = []) => ({
@@ -12,8 +12,8 @@ const recipeBody = (isPublic: boolean, stepsImages: string[] = []) => ({
   stepsImages
 })
 
-test('private recipes and their photos are visible only to their owner', async ({ page }) => {
-  await page.goto('/')
+test('private recipes and their photos are visible only to their owner', async ({ page, goto }) => {
+  await goto('/', { waitUntil: 'hydration' })
   const api = (path: string) => new URL(path, page.url()).toString()
   const suffix = `${Date.now()}`
   const owner = {

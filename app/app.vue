@@ -46,7 +46,7 @@
         </BCol>
         <BCol style="overflow-y: auto; height: 100vh" class="me-0 pe-0">
           <BRow class="px-3 pt-2">
-            <BCol><AccountAccountMenu /></BCol>
+            <BCol><AccountMenu /></BCol>
           </BRow>
           <NuxtPage />
         </BCol>

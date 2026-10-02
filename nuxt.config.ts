@@ -17,8 +17,7 @@ export default defineNuxtConfig({
     '@pinia/colada-nuxt',
     '@pinia/nuxt',
     '@vee-validate/nuxt',
-    '@vueuse/nuxt',
-    'nuxt-zod-i18n'
+    '@vueuse/nuxt'
   ],
   i18n: {
     defaultLocale: 'en',
