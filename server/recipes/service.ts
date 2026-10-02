@@ -1,5 +1,11 @@
-import type { CreateRecipeRequest, RecipeData, UpdateRecipeRequest } from '../../types/recipe'
+import {
+  type CreateRecipeRequest,
+  type ListRecipesApiQuery,
+  type RecipeData,
+  type UpdateRecipeRequest
+} from '../../types/recipe'
 import { useRecipeRepository } from './repository'
+import { queryRecipes } from './query'
 import {
   deletePhoto,
   deletePhotos,
@@ -163,3 +169,6 @@ export const addOrphanedStepPhoto = async ({
 
 export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeData) =>
   deletePhotos(listRemovedRecipePhotoUrls({ previous, next }))
+
+export const listRecipes = async (query: ListRecipesApiQuery = {}) =>
+  queryRecipes(await useRecipeRepository().list(), query)

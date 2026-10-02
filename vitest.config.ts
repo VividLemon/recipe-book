@@ -10,7 +10,8 @@ export default defineConfig({
           name: 'unit',
           include: [
             'test/unit/*.{test,spec}.ts',
-            'app/utils/**/*.spec.ts'
+            'app/utils/**/*.spec.ts',
+            'app/queries/**/*.spec.ts'
           ],
           environment: 'node',
         },

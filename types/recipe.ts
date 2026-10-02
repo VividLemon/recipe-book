@@ -279,6 +279,32 @@ export type ReadRecipeResponse = RecipeWeb[]
 
 export type ShowRecipeResponse = RecipeWeb
 
+export const recipeSortFieldsWeb = ['name', 'createdAt', 'updatedAt', 'time'] as const
+export type RecipeSortFieldWeb = (typeof recipeSortFieldsWeb)[number]
+export const recipeSortOrdersWeb = ['asc', 'desc'] as const
+export type RecipeSortOrderWeb = (typeof recipeSortOrdersWeb)[number]
+export const defaultRecipePageSize = 12
+export const maximumRecipePageSize = 100
+
+/** Backend list query: page-number pagination. All values are optional. */
+export interface ListRecipesApiQuery {
+  name?: string
+  tag?: string
+  difficulty?: RecipeDifficultyWeb
+  sort?: RecipeSortFieldWeb
+  order?: RecipeSortOrderWeb
+  page?: number
+  pageSize?: number
+}
+
+export interface RecipePageResponse {
+  items: RecipeWeb[]
+  total: number
+  page: number
+  pageSize: number
+  nextPage: number | null
+}
+
 // ============================================================================
 // Web requests
 // ============================================================================
