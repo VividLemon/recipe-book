@@ -47,7 +47,6 @@ test('private recipes and their photos are visible only to their owner', async (
       file_file: { name: 'private.png', mimeType: 'image/png', buffer: image }
     }
   })
-  console.log(await photoResponse.text())
   expect(photoResponse.status()).toBe(201)
   const photoUrl = (await photoResponse.json()).url as string
 

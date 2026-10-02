@@ -176,10 +176,7 @@ export const processPhoto = async (
   } catch (e) {
     consola.error(e)
     return {
-      error: photoError({
-        statusCode: 500,
-        message: String(e)
-      })
+      error: unknownPhotoError
     }
   }
 }

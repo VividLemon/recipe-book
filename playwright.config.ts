@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 import type { ConfigOptions } from '@nuxt/test-utils/playwright'
 
 process.env.NUXT_SESSION_PASSWORD ??= 'recipe-book-test-session-password-at-least-32-characters'
+process.env.NUXT_DOCUMENT_BACKEND ??= 'memory'
+process.env.NUXT_FILE_BACKEND ??= 'memory'
 
 export default defineConfig<ConfigOptions>({
   testDir: './test/e2e',
