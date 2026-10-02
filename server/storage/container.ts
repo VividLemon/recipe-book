@@ -75,8 +75,16 @@ export const configureStorageWithMongo = async (
   return configureStorage({
     ...options,
     documents: {
-      recipes: new MongoDocumentEngine(database.collection(options.mongodb.recipesCollection ?? 'recipes') as any),
-      recipeTags: new MongoDocumentEngine(database.collection(options.mongodb.recipeTagsCollection ?? 'recipeTags') as any)
+      recipes: new MongoDocumentEngine(
+        database.collection<RecipeData & { _id: string }>(
+          options.mongodb.recipesCollection ?? 'recipes'
+        )
+      ),
+      recipeTags: new MongoDocumentEngine(
+        database.collection<RecipeTagData & { _id: string }>(
+          options.mongodb.recipeTagsCollection ?? 'recipeTags'
+        )
+      )
     }
   })
 }

@@ -1,6 +1,7 @@
 import { PassThrough } from 'node:stream'
 import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
+import { PHOTO_MIME_TYPES } from '../../photos/utils'
 
 /**
  * Serves a photo out of the configured file engine. Since the storage backend is
@@ -15,14 +16,6 @@ export default defineEventHandler(async (event) => {
   if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
 
   const extension = name.split('.').pop()?.toLowerCase()
-  const contentTypes: Record<string, string> = {
-    avif: 'image/avif',
-    webp: 'image/webp',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif'
-  }
   const source = await usePhotoFiles().getStream(name)
   if (!source) throw notFoundError
 
@@ -39,7 +32,8 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(
     event,
     'Content-Type',
-    detectedType?.mime ?? contentTypes[extension ?? ''] ?? 'application/octet-stream'
+    detectedType?.mime ?? PHOTO_MIME_TYPES[extension as keyof typeof PHOTO_MIME_TYPES] ??
+      'application/octet-stream'
   )
   setResponseHeader(event, 'Cache-Control', 'public, max-age=31536000, immutable')
   return response
