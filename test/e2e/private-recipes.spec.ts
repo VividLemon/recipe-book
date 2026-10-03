@@ -62,7 +62,7 @@ test('private recipes and their photos are visible only to their owner', async (
   const guestRegistration = await request('/api/auth/register', { method: 'POST', data: guest })
   expect(guestRegistration.status()).toBe(201)
   sessionCookie = guestRegistration.headers()['set-cookie']?.split(';', 1)[0] ?? ''
-  expect(await (await request(`/api/recipes/${recipe.id}`)).json()).toBeNull()
+  expect((await request(`/api/recipes/${recipe.id}`)).status()).toBe(204)
   expect((await request(photoUrl)).status()).toBe(404)
   expect((await request(`/api/recipes/${recipe.id}`, {
     method: 'PUT',
