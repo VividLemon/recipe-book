@@ -8,6 +8,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ middleware: 'authenticated' })
+
 import { buildOptimisticRecipe } from '~/queries/recipeCache'
 import type { UpdateRecipeModel } from '../../../components/recipes/CreateUpdate.vue'
 
@@ -31,6 +33,7 @@ const updateRecipe = ref<UpdateRecipeModel>({
   id: id.value || '',
   name: previousRecipe.data.value?.name || '',
   coverImage: null,
+  isPublic: previousRecipe.data.value?.isPublic !== false,
   steps: previousRecipe.data.value?.steps || '',
   tags: previousRecipe.data.value?.tags.map((el) => el.id) || [],
   time: previousRecipe.data.value?.time.toString() || null,

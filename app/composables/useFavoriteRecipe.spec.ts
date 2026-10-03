@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { useFavoriteRecipe } from './useFavoriteRecipe'
+import { updateFavoriteIds } from '../utils/favorites'
 
-describe('useFavoriteRecipe', () => {
-  it('toggles recipe ids in the favorites set', () => {
-    const { hasFavorite, toggleFavorite } = useFavoriteRecipe()
-    expect(hasFavorite('recipe-1')).toBe(false)
-    toggleFavorite('recipe-1')
-    expect(hasFavorite('recipe-1')).toBe(true)
-    toggleFavorite('recipe-1')
-    expect(hasFavorite('recipe-1')).toBe(false)
+describe('favorite recipe updates', () => {
+  it('adds and removes favorites without duplicates', () => {
+    expect(updateFavoriteIds([], 'recipe-1', true)).toEqual(['recipe-1'])
+    expect(updateFavoriteIds(['recipe-1'], 'recipe-1', true)).toEqual(['recipe-1'])
+    expect(updateFavoriteIds(['recipe-1', 'recipe-2'], 'recipe-1', false)).toEqual(['recipe-2'])
   })
 })

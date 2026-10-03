@@ -8,7 +8,7 @@ import {
   type RecipeSortOrderWeb
 } from '../../types/recipe'
 
-/** Application-level sort key. `favorite` is resolved on the client only. */
+/** Application-level sort key. Favorite ranking is resolved with the user's profile on the server. */
 export type RecipeListSortBy = '' | RecipeSortFieldWeb | 'favorite'
 
 export interface RecipeListQuery {
@@ -73,9 +73,7 @@ export const mapRecipeListQueryToApi = (
   ...(query.name ? { name: query.name } : {}),
   ...(query.tag ? { tag: query.tag } : {}),
   ...(query.difficulty ? { difficulty: query.difficulty } : {}),
-  ...(query.sortBy && query.sortBy !== 'favorite'
-    ? { sort: query.sortBy, order: query.sortOrder }
-    : {}),
+  ...(query.sortBy ? { sort: query.sortBy, order: query.sortOrder } : {}),
   page,
   pageSize
 })

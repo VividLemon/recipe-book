@@ -57,4 +57,15 @@ describe('queryRecipes', () => {
     const page = queryRecipes(recipes, { name: 'apple', pageSize: 1 })
     expect(page).toMatchObject({ total: 2, nextPage: 2 })
   })
+
+  it('sorts favorites across the full result set before pagination', () => {
+    const page = queryRecipes(recipes, {
+      sort: 'favorite',
+      order: 'asc',
+      pageSize: 2
+    }, ['id-04', 'id-05'])
+    expect(page.items.map((recipe) => recipe.id)).toEqual(['id-04', 'id-05'])
+    expect(page.total).toBe(5)
+    expect(page.nextPage).toBe(2)
+  })
 })

@@ -10,7 +10,7 @@ export default defineNitroPlugin(async () => {
   } as Parameters<typeof configureStorage>[0]
 
   if (documentBackend === 'mongodb') {
-    const mongodb = config.mongodb as { uri?: string; database?: string; recipesCollection?: string; recipeTagsCollection?: string }
+    const mongodb = config.mongodb as { uri?: string; database?: string; recipesCollection?: string; recipeTagsCollection?: string; usersCollection?: string }
     if (!mongodb?.uri || !mongodb.database) throw new Error('MongoDB document backend requires mongodb.uri and mongodb.database')
     await configureStorageWithMongo({
       ...options,
@@ -18,7 +18,8 @@ export default defineNitroPlugin(async () => {
         uri: mongodb.uri,
         database: mongodb.database,
         recipesCollection: mongodb.recipesCollection,
-        recipeTagsCollection: mongodb.recipeTagsCollection
+        recipeTagsCollection: mongodb.recipeTagsCollection,
+        usersCollection: mongodb.usersCollection
       }
     })
     return

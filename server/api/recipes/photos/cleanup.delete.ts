@@ -3,6 +3,7 @@ import { consola } from 'consola'
 import { useRecipeRepository } from '#server/recipes/repository.ts';
 
 export default defineEventHandler(async (event) => {
+  await requireUserSession(event)
   const promise = async () => {
     try {
       const recipes = await useRecipeRepository().list()

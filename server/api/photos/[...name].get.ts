@@ -2,6 +2,8 @@ import { PassThrough } from 'node:stream'
 import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
 import { photoMimeTypes } from '../../photos/utils'
+import { useRecipeRepository } from '../../recipes/repository'
+import { canAccessPhoto } from '../../photos/access'
 
 /**
  * Serves a photo out of the configured file engine. Since the storage backend is
@@ -15,11 +17,18 @@ export default defineEventHandler(async (event) => {
   // segments or leading slashes the same way).
   if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
 
+  const photoUrl = `/api/photos/${name}`
+  const [session, recipes] = await Promise.all([
+    getUserSession(event),
+    useRecipeRepository().list()
+  ])
+  if (!canAccessPhoto(recipes, photoUrl, session.user?.id)) throw notFoundError
+
   const extension = name.split('.').pop()?.toLowerCase()
   const source = await usePhotoFiles().getStream(name)
   if (!source) throw notFoundError
 
-  setResponseHeader(event, 'Cache-Control', 'public, max-age=300')
+  setResponseHeader(event, 'Cache-Control', 'private, no-store')
   setResponseHeader(
     event,
     'Content-Type',

@@ -98,7 +98,11 @@ Server persistence is provided by typed engines in `server/storage`. Configure
 documents may also use `mongodb`. Filesystem data is stored under
 `NUXT_STORAGE_DIR` (default `.data`). MongoDB additionally requires
 `NUXT_MONGODB_URI` and `NUXT_MONGODB_DATABASE` (collection names are
-configurable). The repository layer keeps API handlers independent of the
+configurable, including `NUXT_MONGODB_USERS_COLLECTION`). Users and their
+favorites are stored through the same document backend. Accounts can be
+self-registered; passwords are stored as scrypt hashes. Configure
+`NUXT_SESSION_PASSWORD` with a secret of at least 32 characters in every
+deployed environment to encrypt authentication cookies. The repository layer keeps API handlers independent of the
 backend, and the `$test` configuration selects memory engines.
 
 Server code follows bounded contexts: `server/recipes`, `server/recipe-tags`,

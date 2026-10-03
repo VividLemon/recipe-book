@@ -4,6 +4,7 @@ import { getRecipeTags } from '../../recipe-tags/service'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
 
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const parsed = await
     (readMultipartFormData(event)
       .then((raw) => {
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  const created = await createRecipe(parsed)
+  const created = await createRecipe(parsed, user.id)
   setResponseStatus(event, 201)
   return mapRecipeDataToWeb(created, await getRecipeTags())
 })

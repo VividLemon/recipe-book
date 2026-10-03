@@ -26,10 +26,10 @@ export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
   async page(query: DocumentQuery<T> = {}): Promise<DocumentPage<T>> {
     try {
       const entries = await readdir(this.directory, { withFileTypes: true })
-      let values = (await Promise.all(entries
+      const loadedValues = await Promise.all(entries
         .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
-        .map((entry) => this.get(entry.name.slice(0, -5)))))
-        .filter((value): value is T => value !== null)
+        .map((entry) => this.get(entry.name.slice(0, -5))))
+      let values = loadedValues.filter((value) => value !== null) as unknown as T[]
       if (query.filter) values = values.filter((value) => Object.entries(query.filter!).every(([key, expected]) => value[key as keyof T] === expected))
       if (query.sortBy) {
         const key = query.sortBy

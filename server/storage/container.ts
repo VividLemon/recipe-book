@@ -1,5 +1,6 @@
 import type { RecipeData } from '../recipes/types'
 import type { RecipeTagData } from '../recipe-tags/types'
+import type { UserData } from '../users/types'
 import { FilesystemDocumentEngine } from './documents/filesystem'
 import { MemoryDocumentEngine } from './documents/memory'
 import { FilesystemFileEngine } from './filesystem'
@@ -17,6 +18,7 @@ export interface StorageContainerOptions {
   documents?: {
     recipes?: DocumentEngine<RecipeData>
     recipeTags?: DocumentEngine<RecipeTagData>
+    users?: DocumentEngine<UserData>
   }
   photos?: FileEngine
   mongodb?: MongoStorageOptions
@@ -27,6 +29,7 @@ export interface MongoStorageOptions {
   database: string
   recipesCollection?: string
   recipeTagsCollection?: string
+  usersCollection?: string
 }
 
 let repositories: StorageRepositories | undefined
@@ -38,29 +41,32 @@ export const createStorageRepositories = (options: StorageContainerOptions = {})
     fileBackend = process.env.NODE_ENV === 'test' ? 'memory' : 'filesystem',
     directory = './.data'
   } = options
-  if (documentBackend === 'mongodb' && (!options.documents?.recipes || !options.documents.recipeTags)) {
+  if (documentBackend === 'mongodb' && (!options.documents?.recipes || !options.documents.recipeTags || !options.documents.users)) {
     throw new StorageError('configuration', 'MongoDB document engines must be composed before creating repositories')
   }
   const documentEngines = {
     memory: () => ({
       recipes: new MemoryDocumentEngine<RecipeData>(),
-      recipeTags: new MemoryDocumentEngine<RecipeTagData>()
+      recipeTags: new MemoryDocumentEngine<RecipeTagData>(),
+      users: new MemoryDocumentEngine<UserData>()
     }),
     filesystem: () => ({
       recipes: new FilesystemDocumentEngine<RecipeData>(`${directory}/recipes`),
-      recipeTags: new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`)
+      recipeTags: new FilesystemDocumentEngine<RecipeTagData>(`${directory}/recipeTags`),
+      users: new FilesystemDocumentEngine<UserData>(`${directory}/users`)
     }),
     mongodb: () => options.documents!
   } as const
-  const { recipes: recipeEngine, recipeTags: tagEngine } = documentEngines[documentBackend]()
+  const { recipes: recipeEngine, recipeTags: tagEngine, users: userEngine } = documentEngines[documentBackend]()
   const fileEngines = {
     memory: () => new MemoryFileEngine(),
     filesystem: () => new FilesystemFileEngine(`${directory}/photos`)
   } as const
-  const recipes = new DocumentRepository<RecipeData>(recipeEngine)
-  const tags = new DocumentRepository<RecipeTagData>(tagEngine)
+  const recipes = new DocumentRepository<RecipeData>(recipeEngine!)
+  const tags = new DocumentRepository<RecipeTagData>(tagEngine!)
+  const users = new DocumentRepository<UserData>(userEngine!)
   const photos = options.photos ?? fileEngines[fileBackend]()
-  return { recipes, recipeTags: tags, photos }
+  return { recipes, recipeTags: tags, users, photos }
 }
 
 export const configureStorageWithMongo = async (
@@ -76,6 +82,11 @@ export const configureStorageWithMongo = async (
       recipes: new MongoDocumentEngine(
         database.collection<RecipeData & { _id: string }>(
           options.mongodb.recipesCollection ?? 'recipes'
+        )
+      ),
+      users: new MongoDocumentEngine(
+        database.collection<UserData & { _id: string }>(
+          options.mongodb.usersCollection ?? 'users'
         )
       ),
       recipeTags: new MongoDocumentEngine(
