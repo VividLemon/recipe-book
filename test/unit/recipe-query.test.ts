@@ -63,7 +63,7 @@ describe('queryRecipes', () => {
       sort: 'favorite',
       order: 'asc',
       pageSize: 2
-    }, ['id-04', 'id-05'])
+    }, new Set(['id-04', 'id-05']))
     expect(page.items.map((recipe) => recipe.id)).toEqual(['id-04', 'id-05'])
     expect(page.total).toBe(5)
     expect(page.nextPage).toBe(2)

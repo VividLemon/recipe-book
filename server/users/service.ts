@@ -1,22 +1,15 @@
 import { v7 } from 'uuid'
-import { useUserRepository } from './repository'
+import { findUserByEmail, findUserByUsername, useUserRepository } from './repository'
+import { accountAlreadyExistsError, incorrectCurrentPasswordError } from './errors'
 import type { PublicUser, UserData } from './types'
+
+export { findUserByEmail, findUserByUsername } from './repository'
 
 export const publicUser = ({ id, username, email }: UserData): PublicUser => ({
   id,
   username,
   email
 })
-
-export const findUserByEmail = async (email: string) => {
-  const normalizedEmail = email.trim().toLowerCase()
-  return (await useUserRepository().list()).find((user) => user.email === normalizedEmail) ?? null
-}
-
-export const findUserByUsername = async (username: string) => {
-  const normalizedUsername = username.trim().toLowerCase()
-  return (await useUserRepository().list()).find((user) => user.username.toLowerCase() === normalizedUsername) ?? null
-}
 
 export const registerUser = async ({
   username,
@@ -32,7 +25,7 @@ export const registerUser = async ({
     findUserByUsername(username)
   ])
   if (existingEmail || existingUsername) {
-    throw createError({ statusCode: 409, statusMessage: 'Username or email is already registered' })
+    throw accountAlreadyExistsError()
   }
 
   const user: UserData = {
@@ -55,7 +48,7 @@ export const updatePassword = async (
 ) => {
   const user = await useUserRepository().get(userId)
   if (!user || !await verifyPassword(user.passwordHash, oldPassword)) {
-    throw createError({ statusCode: 400, statusMessage: 'Current password is incorrect' })
+    throw incorrectCurrentPasswordError()
   }
   await useUserRepository().set({
     ...user,

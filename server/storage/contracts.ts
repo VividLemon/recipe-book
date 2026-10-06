@@ -2,12 +2,18 @@ import type { Readable } from 'node:stream'
 
 export type StorageId = string
 
+export type DocumentFilter<T> = Partial<Record<keyof T, unknown>> & {
+  $or?: DocumentFilter<T>[]
+  $and?: DocumentFilter<T>[]
+}
+
 export interface DocumentQuery<T> {
   offset?: number
   limit?: number
-  filter?: Partial<T>
+  filter?: DocumentFilter<T>
   sortBy?: keyof T
   sortDirection?: 'asc' | 'desc'
+  favoriteIds?: string[]
 }
 
 export interface DocumentPage<T> {
@@ -19,6 +25,7 @@ export interface DocumentPage<T> {
 
 export interface DocumentEngine<T> {
   get(id: StorageId): Promise<T | null>
+  findOne(filter: DocumentFilter<T>): Promise<T | null>
   list(query?: DocumentQuery<T>): Promise<T[]>
   page(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
   set(id: StorageId, value: T): Promise<void>

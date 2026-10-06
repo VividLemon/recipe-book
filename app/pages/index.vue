@@ -87,12 +87,12 @@
           <RecipesGrid
             v-if="tableMode === 'Grid'"
             :per-row="gridPerRow"
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
           <RecipesTable
             v-else
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
           <RecipesShowRecipeModal
@@ -159,17 +159,12 @@ const { query, update } = useRecipeListRoute()
 watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
   if (!isLoggedIn && sortBy === 'favorite') {
     update({ sortBy: '' }, { replace: true })
-    navigateTo('/login')
   }
 })
 
-const sortByOptions = computed<{
-  text: string
-  value: RecipeListSortBy
-  disabled?: boolean
-}[]>(() => [
+const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
-  { text: 'Favorite', value: 'favorite', disabled: !loggedIn.value },
+  ...(loggedIn.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },
@@ -190,8 +185,6 @@ const recipeTagOptions = computed(() => [
 
 const recipes = useRecipeList(query)
 const requestFetch = useRequestFetch()
-
-const computedRecipes = computed<RecipeWeb[]>(() => recipes.items.value)
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 useIntersectionObserver(sentinel, ([entry]) => {

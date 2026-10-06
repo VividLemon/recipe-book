@@ -21,15 +21,23 @@
 </template>
 
 <script setup lang="ts">
+import { useQueryCache } from '@pinia/colada'
 import PersonCircleIcon from '~icons/bi/person-circle'
+import { recipeKeys } from '~/queries/recipes'
 
 const { loggedIn, user, clear } = useUserSession()
-const clearRecipeCache = useRecipeSessionCache()
+const queryCache = useQueryCache()
+
+const flushCaches = () => {
+  for (const entry of queryCache.getEntries({ key: recipeKeys.root })) {
+    queryCache.remove(entry)
+  }
+}
 
 const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await clear()
-  clearRecipeCache()
+  flushCaches()
   await navigateTo('/login')
 }
 </script>

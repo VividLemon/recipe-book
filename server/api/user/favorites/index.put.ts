@@ -1,21 +1,18 @@
-import { object, boolean, uuidv7 } from 'zod'
 import { getAccessibleRecipe } from '../../../recipes/service'
+import { recipeNotFoundError } from '../../../recipes/errors'
 import { useUserRepository } from '../../../users/repository'
-
-const bodySchema = object({
-  recipeId: uuidv7(),
-  favorite: boolean()
-})
+import { accountMissingError } from '../../../users/errors'
+import { favoriteUpdate } from '../../../users/validation'
 
 export default defineEventHandler(async (event) => {
   const { user: sessionUser } = await requireUserSession(event)
-  const body = await readValidatedBody(event, bodySchema.parse)
+  const body = await readValidatedBody(event, favoriteUpdate.parse)
   const [user, recipe] = await Promise.all([
     useUserRepository().get(sessionUser.id),
     getAccessibleRecipe(body.recipeId, sessionUser.id)
   ])
-  if (!user) throw createError({ statusCode: 401, statusMessage: 'Account no longer exists' })
-  if (!recipe) throw createError({ statusCode: 404, statusMessage: 'Recipe not found' })
+  if (!user) throw accountMissingError()
+  if (!recipe) throw recipeNotFoundError()
 
   const favorites = new Set(user.favorites)
   if (body.favorite) favorites.add(body.recipeId)

@@ -31,7 +31,6 @@ const success = ref(false)
 const changePassword = async (credentials: {
   oldPassword: string
   newPassword: string
-  confirmPassword: string
 }) => {
   loading.value = true
   error.value = ''

@@ -23,9 +23,9 @@
             <PencilIcon />
           </BButton>
           <BButton
+            v-if="loggedIn"
             :variant="null"
-            :to="loggedIn ? undefined : '/login'"
-            @click="loggedIn && toggleFavorite(readableRecipe.id)"
+            @click="toggleFavorite(readableRecipe.id)"
           >
             <RecipesFavoriteStarIcon
               :id="readableRecipe.id"

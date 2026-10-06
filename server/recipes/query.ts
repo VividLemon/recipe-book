@@ -16,7 +16,7 @@ export interface RecipeListPage {
 export const queryRecipes = (
   recipes: RecipeData[],
   query: ListRecipesApiQuery = {},
-  favoriteIds: string[] = []
+  favoriteIds: ReadonlySet<string> = new Set()
 ): RecipeListPage => {
   const name = query.name?.trim().toLowerCase()
   let values = recipes.filter((el) =>
@@ -30,7 +30,7 @@ export const queryRecipes = (
   values = [...values].sort((a, b) => {
     if (!sort) return a.createdAt - b.createdAt || a.id.localeCompare(b.id)
     if (sort === 'favorite') {
-      const rank = Number(favoriteIds.includes(b.id)) - Number(favoriteIds.includes(a.id))
+      const rank = Number(favoriteIds.has(b.id)) - Number(favoriteIds.has(a.id))
       return rank * direction || a.id.localeCompare(b.id)
     }
     const valueA = a[sort]

@@ -5,12 +5,13 @@ import { updateFavoriteIds } from '~/utils/favorites'
 export const useFavoriteRecipe = () => {
   const favorites = useState<string[]>('recipe-favorites', () => [])
   const loadedForUser = useState<string | null>('recipe-favorites-user', () => null)
-  const loadingForUser = useState<string | null>('recipe-favorites-loading-user', () => null)
+  const isLoading = useState<boolean>('recipe-favorites-loading', () => false)
+  const favoriteIds = computed(() => new Set(favorites.value))
   const { loggedIn, user } = useUserSession()
   const queryCache = useQueryCache()
   const requestFetch = useRequestFetch()
 
-  const hasFavorite = (id: string) => favorites.value.includes(id)
+  const hasFavorite = (id: string) => favoriteIds.value.has(id)
 
   const refreshFavorites = async (force = false) => {
     if (!loggedIn.value || !user.value) {
@@ -18,15 +19,26 @@ export const useFavoriteRecipe = () => {
       loadedForUser.value = null
       return
     }
-    if ((!force && loadedForUser.value === user.value.id) || loadingForUser.value === user.value.id) return
-    loadingForUser.value = user.value.id
+    if (loadedForUser.value !== user.value.id) {
+      favorites.value = []
+      loadedForUser.value = null
+    }
+    if ((!force && loadedForUser.value === user.value.id) || isLoading.value) return
+    const requestedUserId = user.value.id
+    isLoading.value = true
     try {
-      favorites.value = await requestFetch<string[]>('/api/user/favorites')
-      loadedForUser.value = user.value.id
+      const ids = await requestFetch<string[]>('/api/user/favorites')
+      if (loggedIn.value && user.value?.id === requestedUserId) {
+        favorites.value = [...new Set(ids)]
+        loadedForUser.value = requestedUserId
+      }
     } catch (error) {
       await using _ = await useToaster().apiError(error)
     } finally {
-      loadingForUser.value = null
+      isLoading.value = false
+      if (loggedIn.value && user.value?.id !== requestedUserId) {
+        void refreshFavorites(true)
+      }
     }
   }
 
@@ -35,19 +47,24 @@ export const useFavoriteRecipe = () => {
       await navigateTo('/login')
       return
     }
+    const userId = user.value.id
     const previous = favorites.value
     const shouldFavorite = !hasFavorite(id)
     favorites.value = updateFavoriteIds(previous, id, shouldFavorite)
     loadedForUser.value = user.value.id
 
     try {
-      favorites.value = await requestFetch<string[]>('/api/user/favorites', {
+      const ids = await requestFetch<string[]>('/api/user/favorites', {
         method: 'PUT',
         body: { recipeId: id, favorite: shouldFavorite }
       })
-      await queryCache.invalidateQueries({ key: recipeKeys.root })
+      if (user.value?.id === userId) {
+        favorites.value = [...new Set(ids)]
+        loadedForUser.value = userId
+        await queryCache.invalidateQueries({ key: recipeKeys.root })
+      }
     } catch (error) {
-      favorites.value = previous
+      if (user.value?.id === userId) favorites.value = previous
       await using _ = await useToaster().apiError(error)
     }
   }

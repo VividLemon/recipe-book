@@ -4,8 +4,7 @@ import {
   type RecipeData,
   type UpdateRecipeRequest
 } from '../../types/recipe'
-import { useRecipeRepository } from './repository'
-import { queryRecipes } from './query'
+import { queryRecipePage, useRecipeRepository } from './repository'
 import {
   deletePhoto,
   deletePhotos,
@@ -178,13 +177,8 @@ export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeDa
 export const listRecipes = async (
   query: ListRecipesApiQuery = {},
   userId?: string,
-  favoriteIds: string[] = []
-) => {
-  const recipes = (await useRecipeRepository().list()).filter((recipe) =>
-    canAccessRecipe(recipe, userId)
-  )
-  return queryRecipes(recipes, query, favoriteIds)
-}
+  favoriteIds: ReadonlySet<string> = new Set()
+) => queryRecipePage(query, userId, favoriteIds)
 
 export const getAccessibleRecipe = async (id: string, userId?: string) => {
   const recipe = await useRecipeRepository().get(id)

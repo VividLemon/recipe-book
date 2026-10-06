@@ -9,7 +9,7 @@ test('registers an account, changes its password, and logs in again', async ({ p
   await goto('/register', { waitUntil: 'hydration' })
   await page.getByLabel('Username').fill(username)
   await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill(password)
+  await page.getByLabel('Password', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Create account' }).click()
   await expect(page).toHaveURL(/\/$/)
 
@@ -28,7 +28,7 @@ test('registers an account, changes its password, and logs in again', async ({ p
   await expect(page).toHaveURL(/\/login$/)
 
   await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill(updatedPassword)
+  await page.getByLabel('Password', { exact: true }).fill(updatedPassword)
   await page.locator('form').getByRole('button', { name: 'Log in' }).click()
   await expect(page).toHaveURL(/\/$/)
 })

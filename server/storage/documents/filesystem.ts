@@ -1,7 +1,8 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { DocumentEngine, DocumentPage, DocumentQuery, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentFilter, DocumentPage, DocumentQuery, StorageId } from '../contracts'
 import { assertStorageKey, normalizeStorageError } from '../contracts'
+import { compareDocuments, matchesDocumentFilter } from './query'
 
 export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
   constructor(private readonly directory: string) {}
@@ -19,6 +20,10 @@ export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
     }
   }
 
+  async findOne(filter: DocumentFilter<T>) {
+    return (await this.page({ filter, limit: 1 })).items[0] ?? null
+  }
+
   async list(query?: DocumentQuery<T>) {
     return (await this.page(query)).items
   }
@@ -30,11 +35,8 @@ export class FilesystemDocumentEngine<T> implements DocumentEngine<T> {
         .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
         .map((entry) => this.get(entry.name.slice(0, -5))))
       let values = loadedValues.filter((value) => value !== null) as unknown as T[]
-      if (query.filter) values = values.filter((value) => Object.entries(query.filter!).every(([key, expected]) => value[key as keyof T] === expected))
-      if (query.sortBy) {
-        const key = query.sortBy
-        values.sort((a, b) => String(a[key]).localeCompare(String(b[key])) * (query.sortDirection === 'desc' ? -1 : 1))
-      }
+      values = values.filter((value) => matchesDocumentFilter(value, query.filter))
+      values.sort((a, b) => compareDocuments(a, b, query))
       const offset = Math.max(0, query.offset ?? 0)
       return { items: values.slice(offset, query.limit === undefined ? undefined : offset + Math.max(0, query.limit)), total: values.length, offset, limit: query.limit }
     } catch (error: any) {

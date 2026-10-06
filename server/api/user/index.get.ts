@@ -1,9 +1,10 @@
 import { publicUser } from '../../users/service'
 import { useUserRepository } from '../../users/repository'
+import { accountMissingError } from '../../users/errors'
 
 export default defineEventHandler(async (event) => {
   const { user: sessionUser } = await requireUserSession(event)
   const user = await useUserRepository().get(sessionUser.id)
-  if (!user) throw createError({ statusCode: 401, statusMessage: 'Account no longer exists' })
+  if (!user) throw accountMissingError()
   return publicUser(user)
 })
