@@ -27,40 +27,16 @@ export class MongoDocumentEngine<T> implements DocumentEngine<T> {
   async page(query: DocumentQuery<T> = {}): Promise<DocumentPage<T>> {
     const offset = Math.max(0, query.offset ?? 0)
     const filter = (query.filter ?? {}) as Filter<StoredDocument<T>>
-    let items: T[]
-    if (query.favoriteIds) {
-      const direction = query.sortDirection === 'desc' ? -1 : 1
-      const pipeline = [
-        { $match: filter },
-        {
-          $addFields: {
-            _favoriteRank: {
-              $cond: [{ $in: ['$id', query.favoriteIds] }, 0, 1]
-            }
-          }
-        },
-        { $sort: { _favoriteRank: direction, _id: 1 } },
-        { $skip: offset },
-        ...(query.limit === undefined ? [] : [{ $limit: Math.max(0, query.limit) }])
-      ]
-      const documents = await this.collection.aggregate<StoredDocument<T>>(pipeline).toArray()
-      items = documents.map((document) => {
-        const { _id: _ignored, _favoriteRank: _rank, ...value } =
-          document as StoredDocument<T> & { _favoriteRank: number }
-        return value as T
+    const cursor = this.collection.find(filter)
+    if (query.sortBy) {
+      cursor.sort({
+        [String(query.sortBy)]: query.sortDirection === 'desc' ? -1 : 1,
+        _id: 1
       })
-    } else {
-      const cursor = this.collection.find(filter)
-      if (query.sortBy) {
-        cursor.sort({
-          [String(query.sortBy)]: query.sortDirection === 'desc' ? -1 : 1,
-          _id: 1
-        })
-      }
-      if (offset) cursor.skip(offset)
-      if (query.limit !== undefined) cursor.limit(Math.max(0, query.limit))
-      items = (await cursor.toArray()).map(({ _id: _ignored, ...value }) => value as T)
     }
+    if (offset) cursor.skip(offset)
+    if (query.limit !== undefined) cursor.limit(Math.max(0, query.limit))
+    const items = (await cursor.toArray()).map(({ _id: _ignored, ...value }) => value as T)
     const total = await this.collection.countDocuments(
       filter
     )

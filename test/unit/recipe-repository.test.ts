@@ -42,13 +42,20 @@ describe('recipe repository queries', () => {
   })
 
   it('ranks favorites before paginating while keeping the full result count', async () => {
-    const page = await queryRecipePage(
+    const firstPage = await queryRecipePage(
       { sort: 'favorite', page: 1, pageSize: 1 },
       'owner',
       new Set(['public'])
     )
+    const secondPage = await queryRecipePage(
+      { sort: 'favorite', page: 2, pageSize: 1 },
+      'owner',
+      new Set(['public'])
+    )
 
-    expect(page.items.map((recipe) => recipe.id)).toEqual(['public'])
-    expect(page.total).toBe(2)
+    expect(firstPage.items.map((recipe) => recipe.id)).toEqual(['public'])
+    expect(secondPage.items.map((recipe) => recipe.id)).toEqual(['owned'])
+    expect(firstPage.total).toBe(2)
+    expect(firstPage.nextPage).toBe(2)
   })
 })

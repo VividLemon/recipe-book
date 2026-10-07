@@ -41,11 +41,15 @@ export const registerUser = async ({
 
 export const updateUser = async (user: UserData) => useUserRepository().set(user)
 
-export const updatePassword = async (
-  userId: string,
-  oldPassword: string,
+export const updatePassword = async ({
+  userId,
+  oldPassword,
+  newPassword
+}: {
+  userId: string
+  oldPassword: string
   newPassword: string
-) => {
+}) => {
   const user = await useUserRepository().get(userId)
   if (!user || !await verifyPassword(user.passwordHash, oldPassword)) {
     throw incorrectCurrentPasswordError()

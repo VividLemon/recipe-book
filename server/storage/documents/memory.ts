@@ -9,7 +9,7 @@ export class MemoryDocumentEngine<T> implements DocumentEngine<T> {
   }
 
   async findOne(filter: DocumentFilter<T>) {
-    return [...this.documents.values()].find((value) => matchesDocumentFilter(value, filter)) ?? null
+    return this.documents.values().find((value) => matchesDocumentFilter(value, filter)) ?? null
   }
 
   async list(query?: DocumentQuery<T>) {
@@ -17,9 +17,10 @@ export class MemoryDocumentEngine<T> implements DocumentEngine<T> {
   }
 
   async page(query: DocumentQuery<T> = {}): Promise<DocumentPage<T>> {
-    const values = [...this.documents.values()]
+    const values = this.documents.values()
       .filter((value) => matchesDocumentFilter(value, query.filter))
-      .sort((a, b) => compareDocuments(a, b, query))
+      .toArray()
+    values.sort((a, b) => compareDocuments(a, b, query))
     const offset = Math.max(0, query.offset ?? 0)
     const total = values.length
     return { items: values.slice(offset, query.limit === undefined ? undefined : offset + Math.max(0, query.limit)), total, offset, limit: query.limit }

@@ -36,17 +36,9 @@ export const matchesDocumentFilter = <T>(
 export const compareDocuments = <T>(
   a: T,
   b: T,
-  query: Pick<DocumentQuery<T>, 'favoriteIds' | 'sortBy' | 'sortDirection'>
+  query: Pick<DocumentQuery<T>, 'sortBy' | 'sortDirection'>
 ) => {
   const direction = query.sortDirection === 'desc' ? -1 : 1
-  const favorites = query.favoriteIds ? new Set(query.favoriteIds) : undefined
-
-  if (favorites) {
-    const idA = String((a as { id?: string }).id ?? '')
-    const idB = String((b as { id?: string }).id ?? '')
-    const rank = Number(favorites.has(idB)) - Number(favorites.has(idA))
-    return rank * direction || idA.localeCompare(idB)
-  }
 
   if (query.sortBy) {
     const key = query.sortBy

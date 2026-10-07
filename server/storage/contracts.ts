@@ -13,7 +13,6 @@ export interface DocumentQuery<T> {
   filter?: DocumentFilter<T>
   sortBy?: keyof T
   sortDirection?: 'asc' | 'desc'
-  favoriteIds?: string[]
 }
 
 export interface DocumentPage<T> {

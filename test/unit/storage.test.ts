@@ -17,30 +17,29 @@ describe('storage engines', () => {
     })
   })
 
-  it('supports visibility filters, case-insensitive search, and favorite ranking', async () => {
-      const engine = new MemoryDocumentEngine<{
-        id: string
-        ownerId: string
-        isPublic: boolean
-        name: string
-      }>()
-      await engine.set('one', { id: 'one', ownerId: 'user-1', isPublic: false, name: 'Private tart' })
-      await engine.set('two', { id: 'two', ownerId: 'user-2', isPublic: true, name: 'Apple pie' })
-      await engine.set('three', { id: 'three', ownerId: 'user-2', isPublic: true, name: 'Apple cake' })
+  it('supports compound visibility and case-insensitive search filters', async () => {
+    const engine = new MemoryDocumentEngine<{
+      id: string
+      ownerId: string
+      isPublic: boolean
+      name: string
+    }>()
+    await engine.set('one', { id: 'one', ownerId: 'user-1', isPublic: false, name: 'Private tart' })
+    await engine.set('two', { id: 'two', ownerId: 'user-2', isPublic: true, name: 'Apple pie' })
+    await engine.set('three', { id: 'three', ownerId: 'user-2', isPublic: true, name: 'Apple cake' })
 
-      const page = await engine.page({
-        filter: {
-          $and: [
-            { $or: [{ isPublic: { $ne: false } }, { ownerId: 'user-1' }] },
-            { name: { $regex: '^apple', $options: 'i' } }
-          ]
-        },
-        favoriteIds: ['three'],
-        limit: 1
-      })
+    const page = await engine.page({
+      filter: {
+        $and: [
+          { $or: [{ isPublic: { $ne: false } }, { ownerId: 'user-1' }] },
+          { name: { $regex: '^apple', $options: 'i' } }
+        ]
+      },
+      limit: 1
+    })
 
-      expect(page.items.map((item) => item.id)).toEqual(['three'])
-      expect(page.total).toBe(2)
+    expect(page.items.map((item) => item.id)).toEqual(['two'])
+    expect(page.total).toBe(2)
   })
 
   it('stores binary files and validates unsafe keys', async () => {
