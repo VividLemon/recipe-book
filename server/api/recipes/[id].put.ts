@@ -1,61 +1,35 @@
-import type { RecipeData } from '../../../types/recipe'
-import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../../utils/mappers'
 import { deserializeFormData } from '~/utils/serialization'
-import { notFoundError } from '../../utils/errors'
-import { useRecipeStorage } from '../../utils/storage'
-import { deletePhotos, listRemovedRecipePhotoUrls, processPhotoWithThumbnail } from '../../utils/photo'
+import {
+  cleanupReplacedRecipePhotos,
+  updateRecipe,
+} from '../../recipes/service';
 import { recipes } from '../../utils/validation'
-import sanitizeHtml from 'sanitize-html'
-import { consola } from 'consola'
+import { consola } from 'consola';
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
-  const [{ id }, raw] = await Promise.all([
-    getValidatedRouterParams(event, recipes.update.params.parse),
+  const { user } = await requireUserSession(event)
+  const [parsed, { id }] = await Promise.all([
     readMultipartFormData(event)
+      .then((raw) => {
+        if(!raw) throw noDataError
+        return recipes.update.body.safeParseAsync(deserializeFormData(raw))
+      })
+      .then((result) => {
+        if(result.error) throw validationError(result.error)
+        return result.data
+      }),
+
+    getValidatedRouterParams(event, recipes.update.params.parse),
   ])
-  if (!raw) throw noDataError
-  const previous = Object.freeze(await storage.getItem(id))
-  if (!previous) throw notFoundError
-  const parsed = deserializeFormData(raw)
-  const z = await recipes.update.body.safeParseAsync(parsed)
-  if (z.error) throw validationError(z.error)
-  const { coverImage: file, ...rest } = z.data
 
-  const { error, photos: coverImage } = file
-    ? await processPhotoWithThumbnail(file)
-    : {}
-  if (error) throw error
+  const {newRecipe, previousRecipe} = await updateRecipe({ id, input: parsed, userId: user.id })
 
-  const previousValuesNotToChange = {
-    id: previous.id,
-    createdAt: previous.createdAt
-  } as const
-
-  const recipe: RecipeData = {
-    ...previous,
-    ...rest,
-    ingredients: rest.ingredients.map(mapIngredientWebToData),
-    difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
-    updatedAt: Date.now(),
-    photos: {
-      ...previous.photos,
-      coverImage
-    },
-    steps: sanitizeHtml(rest.steps),
-    ...previousValuesNotToChange
+  // Cleanup previous recipe photos if a new cover image was uploaded
+  if (parsed.coverImage) {
+    event.waitUntil(cleanupReplacedRecipePhotos(previousRecipe, newRecipe).catch((e) => {
+      consola.error('Cleanup previous photos exited with error:', e)
+    }))
   }
 
-  // Remove any photos that are no longer used in the updated recipe
-  event.waitUntil(
-    deletePhotos(listRemovedRecipePhotoUrls({
-      previous,
-      next: recipe
-    })).catch((e) => {
-      consola.error('Cleanup previous photos exited with error:', e)
-    })
-  )
-
-  await storage.setItem(id, recipe)
   setResponseStatus(event, 204)
 })

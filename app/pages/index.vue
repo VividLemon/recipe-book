@@ -8,7 +8,8 @@
         <BFormGroup label="Filter by Name:" label-for="FilterName">
           <BFormInput
             id="FilterName"
-            v-model="filters.name"
+            :model-value="query.name"
+            @update:model-value="update({ name: String($event ?? '') }, { replace: true })"
             placeholder="Enter recipe name"
           />
         </BFormGroup>
@@ -17,7 +18,8 @@
         <BFormGroup label="Filter by Tags:" label-for="FilterTags">
           <BFormSelect
             id="FilterTags"
-            v-model="filters.tag"
+            :model-value="query.tag"
+            @update:model-value="update({ tag: String($event ?? '') })"
             :options="recipeTagOptions"
           />
         </BFormGroup>
@@ -26,7 +28,8 @@
         <BFormGroup label="Filter by Difficulty:" label-for="FilterDifficulty">
           <BFormSelect
             id="FilterDifficulty"
-            v-model="filters.difficulty"
+            :model-value="query.difficulty"
+            @update:model-value="update({ difficulty: $event as '' | RecipeDifficultyWeb })"
             :options="[
               {
                 text: 'Select difficulty',
@@ -41,7 +44,12 @@
       <BCol lg="4" md="6" cols="12">
         <BFormGroup label="Sort By:" label-for="SortBy">
           <BInputGroup>
-            <BFormSelect id="SortBy" v-model="sortBy" :options="sortByOptions" />
+            <BFormSelect
+              id="SortBy"
+              :model-value="query.sortBy"
+              :options="sortByOptions"
+              @update:model-value="update({ sortBy: $event as RecipeListSortBy })"
+            />
             <template #append>
               <BButton
                 variant="outline-secondary"
@@ -50,7 +58,7 @@
                 @click="toggleSortOrder"
               >
                 <component
-                  :is="sortOrder === 'asc' ? ArrowUpIcon : ArrowDownIcon"
+                  :is="query.sortOrder === 'asc' ? ArrowUpIcon : ArrowDownIcon"
                 />
               </BButton>
             </template>
@@ -74,26 +82,29 @@
     <BRow class="mt-2">
       <BCol>
         <template
-          v-if="
-            recipes.status.value === 'success' && recipes.data.value?.length
-          "
+          v-if="recipes.items.value.length"
         >
           <RecipesGrid
             v-if="tableMode === 'Grid'"
             :per-row="gridPerRow"
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
           <RecipesTable
             v-else
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
-          <RecipesShowRecipeModal
-            v-model="openRecipe"
-            :recipe="currentRecipe"
-            @hidden="currentRecipe = null"
-          />
+          <div ref="sentinel" class="text-center my-3">
+            <BButton
+              v-if="recipes.hasNextPage.value"
+              variant="outline-primary"
+              :disabled="recipes.asyncStatus.value === 'loading'"
+              @click="recipes.loadNextPage()"
+            >
+              {{ recipes.asyncStatus.value === 'loading' ? 'Loading...' : 'Load more' }}
+            </BButton>
+          </div>
         </template>
         <BAlert
           v-else-if="recipes.status.value === 'error'"
@@ -102,27 +113,38 @@
         >
           {{ recipes.error.value }}
         </BAlert>
+        <BAlert
+          v-else-if="recipes.asyncStatus.value === 'loading'"
+          :model-value="true"
+          variant="info"
+        >
+          Loading recipes...
+        </BAlert>
         <BAlert v-else :model-value="true" variant="info"
           >No recipes have been made! Make one
           <BLink to="/recipes/create">here</BLink>
         </BAlert>
       </BCol>
     </BRow>
+    <RecipesShowRecipeModal
+      v-model="openRecipe"
+      :recipe="currentRecipe"
+      @hidden="currentRecipe = null"
+    />
   </BContainer>
 </template>
 
 <script setup lang="ts">
-// import TableIcon from '~icons/bi/table'
-// import GridIcon from '~icons/bi/grid'
 import {
   recipeDifficultyWeb,
-  type ReadRecipeResponse,
+  type RecipeDifficultyWeb,
   type RecipeWeb
 } from '../../types/recipe'
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
+import type { RecipeListSortBy } from '~/utils/recipeQuery'
 
-const { hasFavorite } = useFavoriteRecipe()
+const { loggedIn } = useUserSession()
 
 const tableModes = ['Grid', 'Table'] as const
 const tableMode = useLocalStorage<(typeof tableModes)[number]>(
@@ -133,27 +155,23 @@ const tableMode = useLocalStorage<(typeof tableModes)[number]>(
   }
 )
 
-const filters = ref({
-  name: '',
-  tag: '',
-  difficulty: ''
-})
-type SortByValueOptions = '' | keyof RecipeWeb | 'favorite'
-const sortByOptions: {
-  text: string
-  value: SortByValueOptions
-}[] = [
+const { query, update } = useRecipeListRoute()
+watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
+  if (!isLoggedIn && sortBy === 'favorite') {
+    update({ sortBy: '' }, { replace: true })
+  }
+}, { immediate: true })
+
+const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
-  { text: 'Favorite', value: 'favorite' },
+  ...(loggedIn.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },
   { text: 'Time', value: 'time' }
-] as const
-const sortOrder = ref<'asc' | 'desc'>('asc')
-const sortBy = ref<SortByValueOptions>('')
+] as const)
 const toggleSortOrder = () => {
-  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  update({ sortOrder: query.value.sortOrder === 'asc' ? 'desc' : 'asc' })
 }
 
 const gridPerRow = ref<number | 'auto'>('auto')
@@ -165,59 +183,26 @@ const recipeTagOptions = computed(() => [
     [])
 ])
 
-const recipes = await useFetch('/api/recipes')
-const computedRecipes = computed<ReadRecipeResponse>(() => {
-  let items = recipes.data.value || []
-  if (filters.value.name) {
-    items = items.filter((el) =>
-      el.name.toLowerCase().includes(filters.value.name.toLowerCase())
-    )
+const recipes = useRecipeList(query)
+const requestFetch = useRequestFetch()
+
+const sentinel = useTemplateRef<HTMLElement>('sentinel')
+useIntersectionObserver(sentinel, ([entry]) => {
+  if (
+    entry?.isIntersecting
+    && recipes.hasNextPage.value
+    && recipes.asyncStatus.value !== 'loading'
+  ) {
+    recipes.loadNextPage()
   }
-  if (filters.value.tag) {
-    items = items.filter((el) =>
-      el.tags.some((tag) => tag.id === filters.value.tag)
-    )
-  }
-  if (filters.value.difficulty) {
-    items = items.filter((el) => el.difficulty === filters.value.difficulty)
-  }
-  if (sortBy.value) {
-    if (sortBy.value === 'favorite') {
-      const {favoriteItems, nonFavoriteItems} = items.reduce(
-        (acc, el) => {
-          if (hasFavorite(el.id)) {
-            acc.favoriteItems.push(el)
-          } else {
-            acc.nonFavoriteItems.push(el)
-          }
-          return acc
-        },
-        { favoriteItems: [] as ReadRecipeResponse, nonFavoriteItems: [] as ReadRecipeResponse }
-      )
-      items = sortOrder.value === 'asc'
-          ? [...favoriteItems, ...nonFavoriteItems]
-          : [...nonFavoriteItems, ...favoriteItems]
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      items.sort((a: any, b: any) => {
-        if (!sortBy.value) return 0
-        const valueA = a[sortBy.value]
-        const valueB = b[sortBy.value]
-        if (typeof valueA === 'number' && typeof valueB === 'number')
-          return valueA - valueB
-        if (typeof valueA === 'string' && typeof valueB === 'string')
-          return valueA.localeCompare(valueB)
-        return 0
-      })
-    }
-  }
-  return items
 })
 
 const openRecipe = ref(false)
-const currentRecipe = ref<ReadRecipeResponse[number] | null>(null)
-const onOpenRecipe = (id: string) => {
-  currentRecipe.value = recipes.data.value?.find((el) => el.id === id) || null
+const currentRecipe = ref<RecipeWeb | null>(null)
+const onOpenRecipe = async (id: string) => {
+  currentRecipe.value =
+    recipes.items.value.find((el) => el.id === id)
+    || (await requestFetch(`/api/recipes/${id}`).catch(() => null))
   if (currentRecipe.value) {
     openRecipe.value = true
   }
@@ -225,6 +210,6 @@ const onOpenRecipe = (id: string) => {
 
 const route = useRoute()
 if (typeof route.query.openRecipe === 'string') {
-  onOpenRecipe(route.query.openRecipe)
+  await onOpenRecipe(route.query.openRecipe)
 }
 </script>

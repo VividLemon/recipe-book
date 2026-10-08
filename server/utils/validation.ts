@@ -1,14 +1,19 @@
-import { array, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
+import { array, boolean, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
 import {
   type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
   recipeDifficultyData,
   ingredientUnitsWeb,
   type CreateRecipeRequest,
+  type ListRecipesApiQuery,
   type UpdateRecipeRequest,
-  recipeTagVariantsWeb
+  recipeTagVariantsWeb,
+  recipeDifficultyWeb,
+  recipeSortFieldsWeb,
+  recipeSortOrdersWeb,
+  maximumRecipePageSize
 } from '../../types/recipe'
-import { getRecipeTags } from './shared'
+import { getRecipeTags } from '../recipe-tags/service'
 
 type ValidatorObject = Partial<Record<'params' | 'body' | 'query', unknown>>
 
@@ -61,6 +66,7 @@ export const recipes = {
       steps: string().nonempty(),
       time: number().min(1).int(),
       tags: array(uuidv7()),
+      isPublic: boolean().optional(),
       coverImage: photoValidator.optional(),
       stepsImages: array(string().nonempty()).optional()
     } satisfies Record<
@@ -79,6 +85,7 @@ export const recipes = {
       time: number().min(1).int(),
       name: string().nonempty(),
       tags: array(uuidv7()),
+      isPublic: boolean().optional(),
       coverImage: photoValidator.optional()
     } satisfies Record<
       keyof Omit<UpdateRecipeRequest, 'photos'> | 'coverImage',
@@ -89,6 +96,17 @@ export const recipes = {
     params: object({
       id: string().nonempty()
     })
+  },
+  list: {
+    query: object({
+      name: string().optional(),
+      tag: string().optional(),
+      difficulty: zodEnum(recipeDifficultyWeb).optional(),
+      sort: zodEnum([...recipeSortFieldsWeb, 'favorite']).optional(),
+      order: zodEnum(recipeSortOrdersWeb).optional(),
+      page: coerce.number().int().min(1).optional(),
+      pageSize: coerce.number().int().min(1).max(maximumRecipePageSize).optional()
+    } satisfies Record<keyof ListRecipesApiQuery, unknown>)
   },
   read: {}
 } satisfies Record<string, ValidatorObject>

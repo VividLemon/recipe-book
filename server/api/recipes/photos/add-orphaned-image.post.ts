@@ -1,43 +1,38 @@
-import type { RecipeData } from '../../../../types/recipe'
 import { deserializeFormData } from '~/utils/serialization'
-import { maximumRecipeStepsPhotoDimensions, stringBooleanToBoolean } from '~/utils/shared'
-import { processPhoto } from '../../../utils/photo'
+import { stringBooleanToBoolean } from '~/utils/shared'
 import { recipePhotos } from '../../../utils/validation'
+import {
+  addOrphanedStepPhoto,
+} from '../../../recipes/service';
+import { useRecipeRepository } from '../../../recipes/repository'
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
-  const [raw, query] = await Promise.all([
-    readMultipartFormData(event),
-    getValidatedQuery(event, recipePhotos.createCover.query.parse)
+  const { user } = await requireUserSession(event)
+  const [parsed, query] = await Promise.all([
+    readMultipartFormData(event)
+      .then((raw) => {
+        if (!raw) throw noDataError
+        return recipePhotos.createCover.body.safeParseAsync(deserializeFormData(raw))
+      })
+      .then((result) => {
+        if (result.error) throw validationError(result.error)
+        return result.data
+      }),
+
+    getValidatedQuery(event, recipePhotos.createCover.query.parseAsync)
   ])
-  if (!raw) throw noDataError
-  const parsed = deserializeFormData(raw)
-  const z = await recipePhotos.createCover.body.safeParseAsync(parsed)
-  if (z.error) throw validationError(z.error)
-  const { file } = z.data
 
-  let previousRecipe: RecipeData | null = null
   if (query?.id) {
-    previousRecipe = await storage.getItem(query.id)
-    if (!previousRecipe) throw notFoundError
+    const recipe = await useRecipeRepository().findOne({ id: query.id })
+    if (!recipe || recipe.ownerId !== user.id) throw notFoundError
   }
 
-  const { photo, error } = await processPhoto(file, {
-    maximumDimensions: maximumRecipeStepsPhotoDimensions,
-    preserveAspectRatio: query?.preserveAspectRatio ? stringBooleanToBoolean(query?.preserveAspectRatio) : undefined
+  const photoUrl = await addOrphanedStepPhoto({
+    file: parsed.file,
+    recipeId: query?.id,
+    preserveAspectRatio: query?.preserveAspectRatio ? stringBooleanToBoolean(query.preserveAspectRatio) : undefined,
   })
-  if (error || !photo) throw error
-
-  if (previousRecipe) {
-    await storage.setItem(previousRecipe.id, {
-      ...previousRecipe,
-      photos: {
-        ...previousRecipe.photos,
-        stepsImages: [...(previousRecipe.photos?.stepsImages || []), photo]
-      }
-    })
-  }
 
   setResponseStatus(event, 201)
-  return { url: photo }
+  return { url: photoUrl }
 })

@@ -19,6 +19,13 @@
     </BRow>
     <BRow>
       <BCol>
+        <BFormCheckbox v-model="recipe.isPublic">
+          Public recipe (visible to everyone)
+        </BFormCheckbox>
+      </BCol>
+    </BRow>
+    <BRow>
+      <BCol>
         <BFormTags
           :model-value="ingredients.map((el) => el.name)"
           placeholder="Ingredients"
@@ -27,7 +34,7 @@
             els.forEach((el) => {ingredients.push({
               name: el,
               quantity: 1,
-              unit: ingredientUnitsWeb[0]
+              unit: defaultIngredientUnit
             })})
           }"
         />
@@ -153,6 +160,7 @@
 import {
   type CreateRecipeRequest,
   type IngredientWeb,
+  type IngredientUnitWeb,
   ingredientUnitsWeb,
   type ImageFormatVariants,
   type ReadRecipeResponse,
@@ -165,6 +173,7 @@ import {object, string, number, array, enum as zEnum} from 'zod'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nullHack = null as any
+const defaultIngredientUnit: IngredientUnitWeb = 'units'
 const recipeDifficulties = [
   { value: null, text: 'Select Difficulty' },
   ...recipeDifficultyWeb.map((el) => ({ value: el, text: el }))
@@ -191,7 +200,7 @@ const recipeTagOptions = computed(() => recipeTags.data.value || [])
 
 export type CreateRecipeModel = Omit<
   CreateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'difficulty' | 'time' | 'coverImage'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string
@@ -199,7 +208,7 @@ export type CreateRecipeModel = Omit<
 }
 export type UpdateRecipeModel = (Omit<
   UpdateRecipeRequest,
-  'difficulty' | 'time' | 'photo'
+  'difficulty' | 'time' | 'coverImage'
 > & {
   difficulty: RecipeDifficultyWeb | null
   time: null | string

@@ -13,11 +13,11 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@nuxtjs/color-mode',
     '@nuxtjs/i18n',
+    'nuxt-auth-utils',
     '@pinia/colada-nuxt',
     '@pinia/nuxt',
     '@vee-validate/nuxt',
-    '@vueuse/nuxt',
-    'nuxt-zod-i18n'
+    '@vueuse/nuxt'
   ],
   i18n: {
     defaultLocale: 'en',
@@ -28,26 +28,26 @@ export default defineNuxtConfig({
   css: ['bootstrap/dist/css/bootstrap.min.css'],
 
   runtimeConfig: {
-    storageDriver: 'fs',
+    documentBackend: 'filesystem',
+    fileBackend: 'filesystem',
     logging: {
       stdout: {}
     },
     storageDir: './.data',
-    s3: {
-      accessKeyId: '',
-      secretAccessKey: '',
-      endpoint: '',
-      region: '',
-      bucket: ''
+    legacyRecipeOwnerId: '',
+    mongodb: {
+      uri: '',
+      database: 'recipe-book',
+      recipesCollection: 'recipes',
+      recipeTagsCollection: 'recipeTags',
+      usersCollection: 'users'
     }
   },
 
-  // CI (and any other Vitest run) sets `NODE_ENV=test`, which Nuxt/Nitro
-  // automatically overlays on top of the config above - forcing all storage
-  // namespaces to the in-memory driver without any code branching.
   $test: {
     runtimeConfig: {
-      storageDriver: 'memory'
+      documentBackend: 'memory',
+      fileBackend: 'memory'
     }
   }
 })

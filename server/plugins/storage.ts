@@ -1,26 +1,42 @@
-import fsDriver from 'unstorage/drivers/fs'
-import memoryDriver from 'unstorage/drivers/memory'
-import s3Driver from 'unstorage/drivers/s3'
+import { configureStorage, configureStorageWithMongo } from '../storage/container'
+import { useRecipeRepository } from '../recipes/repository'
+import { useUserRepository } from '../users/repository'
+import { consola } from 'consola'
 
-const storageNamespaces = ['recipes', 'recipeTags', 'photos'] as const
+const assignLegacyRecipeOwner = async (ownerId: string | undefined) => {
+  if (!ownerId) return
+  if (!await useUserRepository().findOne({ id: ownerId })) {
+    consola.warn(`legacyRecipeOwnerId ${ownerId} does not match any account; ownerless recipes were not assigned`)
+    return
+  }
+  await useRecipeRepository().updateMany({ ownerId: { $exists: false } } as never, { ownerId })
+}
 
 export default defineNitroPlugin(async () => {
-  const storage = useStorage()
   const config = useRuntimeConfig()
+  const documentBackend = config.documentBackend as 'filesystem' | 'memory' | 'mongodb'
+  const options = {
+    documentBackend,
+    fileBackend: config.fileBackend as 'filesystem' | 'memory',
+    directory: config.storageDir as string
+  } as Parameters<typeof configureStorage>[0]
 
-  const driverFor = (namespace: (typeof storageNamespaces)[number]) => {
-    switch (config.storageDriver) {
-      case 'memory':
-        return memoryDriver()
-      case 's3':
-        return s3Driver(config.s3)
-      case 'fs':
-      default:
-        return fsDriver({ base: `${config.storageDir}/${namespace}` })
-    }
+  if (documentBackend === 'mongodb') {
+    const mongodb = config.mongodb as { uri?: string; database?: string; recipesCollection?: string; recipeTagsCollection?: string; usersCollection?: string }
+    if (!mongodb?.uri || !mongodb.database) throw new Error('MongoDB document backend requires mongodb.uri and mongodb.database')
+    await configureStorageWithMongo({
+      ...options,
+      mongodb: {
+        uri: mongodb.uri,
+        database: mongodb.database,
+        recipesCollection: mongodb.recipesCollection,
+        recipeTagsCollection: mongodb.recipeTagsCollection,
+        usersCollection: mongodb.usersCollection
+      }
+    })
+    await assignLegacyRecipeOwner(config.legacyRecipeOwnerId as string | undefined)
+    return
   }
-
-  storageNamespaces.forEach((namespace) => {
-    storage.mount(namespace, driverFor(namespace))
-  })
+  configureStorage(options)
+  await assignLegacyRecipeOwner(config.legacyRecipeOwnerId as string | undefined)
 })

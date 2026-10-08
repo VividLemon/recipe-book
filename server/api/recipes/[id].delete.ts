@@ -1,19 +1,17 @@
-import { useRecipeStorage } from '../../utils/storage'
-import { deleteRecipePhotos } from '../../utils/photo'
 import { recipes } from '../../utils/validation'
 import { consola } from 'consola'
+import { listRecipePhotoUrls } from '#server/photos/operations.ts';
+import { deleteRecipe, deleteUnreferencedPhotos } from '#server/recipes/service.ts';
 
 export default defineEventHandler(async (event) => {
-  const storage = useRecipeStorage()
+  const { user } = await requireUserSession(event)
   const { id } = await getValidatedRouterParams(
     event,
     recipes.delete.params.parse
   )
-
-  event.waitUntil(deleteRecipePhotos(id).catch((e) => {
+  const deletedRecipe = await deleteRecipe({ id, userId: user.id })
+  event.waitUntil(deleteUnreferencedPhotos(listRecipePhotoUrls(deletedRecipe), deletedRecipe.id).catch((e) => {
     consola.error('Cleanup deleted recipe photos exited with error:', e)
   }))
-
-  await storage.removeItem(id)
   setResponseStatus(event, 204)
 })

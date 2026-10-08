@@ -135,6 +135,8 @@ export interface IngredientData {
 
 export interface RecipeData {
   id: string
+  ownerId?: string
+  isPublic?: boolean
   createdAt: number
   updatedAt: number
   name: string
@@ -260,6 +262,8 @@ export interface RecipeTagWeb {
 
 export interface RecipeWeb {
   id: string
+  ownerId?: string
+  isPublic?: boolean
   createdAt: number
   updatedAt: number
   name: string
@@ -278,6 +282,32 @@ export interface RecipeWeb {
 export type ReadRecipeResponse = RecipeWeb[]
 
 export type ShowRecipeResponse = RecipeWeb
+
+export const recipeSortFieldsWeb = ['name', 'createdAt', 'updatedAt', 'time'] as const
+export type RecipeSortFieldWeb = (typeof recipeSortFieldsWeb)[number]
+export const recipeSortOrdersWeb = ['asc', 'desc'] as const
+export type RecipeSortOrderWeb = (typeof recipeSortOrdersWeb)[number]
+export const defaultRecipePageSize = 12
+export const maximumRecipePageSize = 100
+
+/** Backend list query: page-number pagination. All values are optional. */
+export interface ListRecipesApiQuery {
+  name?: string
+  tag?: string
+  difficulty?: RecipeDifficultyWeb
+  sort?: RecipeSortFieldWeb | 'favorite'
+  order?: RecipeSortOrderWeb
+  page?: number
+  pageSize?: number
+}
+
+export interface RecipePageResponse {
+  items: RecipeWeb[]
+  total: number
+  page: number
+  pageSize: number
+  nextPage: number | null
+}
 
 // ============================================================================
 // Web requests
@@ -303,7 +333,8 @@ export interface UpdateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
-  photos?: Buffer
+  isPublic?: boolean
+  coverImage?: Buffer
 }
 
 export interface CreateRecipeRequest {
@@ -313,6 +344,7 @@ export interface CreateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
-  photos?: Buffer
+  isPublic?: boolean
+  coverImage?: Buffer
   stepsImages?: string[]
 }

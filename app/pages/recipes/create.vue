@@ -8,10 +8,15 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ middleware: 'authenticated' })
+
+import { buildOptimisticRecipe } from '~/queries/recipeCache'
 import type { IngredientWeb, recipeDifficultyWeb } from '../../../types/recipe'
 import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
 
 const toaster = useToaster()
+const recipeTags = await useFetch('/api/recipe-tags')
+const { create } = useRecipeMutations()
 
 const recipe = ref<CreateRecipeModel>({
   name: '',
@@ -20,6 +25,7 @@ const recipe = ref<CreateRecipeModel>({
   difficulty: null as null | (typeof recipeDifficultyWeb)[number],
   time: null,
   coverImage: null as File | null,
+  isPublic: true,
   tags: [] as string[],
   stepsImages: [] as string[]
 })
@@ -46,9 +52,13 @@ const save = async () => {
       files: { coverImage }
     })
 
-    const data = await $fetch('/api/recipes', {
-      method: 'POST',
-      body
+    const time = Number.parseInt(rest.time || '')
+    const data = await create.mutateAsync({
+      body,
+      optimistic: buildOptimisticRecipe(
+        { ...rest, difficulty: rest.difficulty!, time },
+        recipeTags.data.value ?? []
+      )
     })
 
     await pushToRoot.execute(data.id)

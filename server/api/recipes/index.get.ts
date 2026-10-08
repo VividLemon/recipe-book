@@ -1,11 +1,24 @@
-import type { ReadRecipeResponse } from '../../../types/recipe'
+import type { RecipePageResponse } from '../../../types/recipe'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
-import { getAllRecipes, getRecipeTags } from '../../utils/shared'
+import { getRecipeTags } from '../../recipe-tags/service'
+import { listRecipes } from '../../recipes/service'
+import { recipes } from '../../utils/validation'
+import { useUserRepository } from '../../users/repository'
+import { recipeLoginRequiredError } from '../../recipes/errors'
 
-export default defineEventHandler(async () => {
-  const [tags, items] = await Promise.all([getRecipeTags(), getAllRecipes()])
+export default defineEventHandler(async (event): Promise<RecipePageResponse> => {
+  const query = await getValidatedQuery(event, recipes.list.query.parse)
+  const session = await getUserSession(event)
+  let favoriteIds = new Set<string>()
+  if (query.sort === 'favorite') {
+    if (!session.user?.id) throw recipeLoginRequiredError()
+    const user = await useUserRepository().findOne({ id: session.user.id })
+    favoriteIds = new Set(user?.favorites ?? [])
+  }
+  const [tags, page] = await Promise.all([
+    getRecipeTags(),
+    listRecipes({ query, userId: session.user?.id, favoriteIds })
+  ])
 
-  return items
-    .filter((el) => el !== null)
-    .map((el) => mapRecipeDataToWeb(el, tags)) satisfies ReadRecipeResponse
+  return { ...page, items: page.items.map((el) => mapRecipeDataToWeb(el, tags)) }
 })
