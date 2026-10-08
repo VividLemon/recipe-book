@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { DocumentEngine, DocumentFilter, DocumentPage, DocumentQuery, DocumentUpdate, StorageId } from '../contracts'
@@ -30,7 +31,7 @@ export class FilesystemDocumentEngine<T extends { id: StorageId }> implements Do
     try {
       await mkdir(this.directory, { recursive: true })
       const destination = this.path(value.id)
-      temporary = `${destination}.${process.pid}.${Date.now()}.tmp`
+      temporary = `${destination}.${process.pid}.${randomUUID()}.tmp`
       await writeFile(temporary, JSON.stringify(value), { encoding: 'utf8', flag: 'wx' })
       await rename(temporary, destination)
       temporary = undefined

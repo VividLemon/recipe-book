@@ -34,6 +34,7 @@ export default defineNuxtConfig({
       stdout: {}
     },
     storageDir: './.data',
+    legacyRecipeOwnerId: '',
     mongodb: {
       uri: '',
       database: 'recipe-book',

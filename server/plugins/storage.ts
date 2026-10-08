@@ -1,4 +1,16 @@
 import { configureStorage, configureStorageWithMongo } from '../storage/container'
+import { useRecipeRepository } from '../recipes/repository'
+import { useUserRepository } from '../users/repository'
+import { consola } from 'consola'
+
+const assignLegacyRecipeOwner = async (ownerId: string | undefined) => {
+  if (!ownerId) return
+  if (!await useUserRepository().findOne({ id: ownerId })) {
+    consola.warn(`legacyRecipeOwnerId ${ownerId} does not match any account; ownerless recipes were not assigned`)
+    return
+  }
+  await useRecipeRepository().updateMany({ ownerId: { $exists: false } } as never, { ownerId })
+}
 
 export default defineNitroPlugin(async () => {
   const config = useRuntimeConfig()
@@ -22,7 +34,9 @@ export default defineNitroPlugin(async () => {
         usersCollection: mongodb.usersCollection
       }
     })
+    await assignLegacyRecipeOwner(config.legacyRecipeOwnerId as string | undefined)
     return
   }
   configureStorage(options)
+  await assignLegacyRecipeOwner(config.legacyRecipeOwnerId as string | undefined)
 })

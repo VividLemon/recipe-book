@@ -8,6 +8,16 @@ import {
 
 export const useRecipeRepository = () => useStorageRepositories().recipes
 
+export const findRecipesByPhotoUrl = async (photoUrl: string) => {
+  const variants = ['coverImage.default', 'coverImage.thumbnail'].flatMap((role) =>
+    ['original', 'webp', 'avif'].map((format) => ({ [`photos.${role}.${format}`]: photoUrl }))
+  )
+  const { items } = await useRecipeRepository().find({
+    filter: { $or: [...variants, { 'photos.stepsImages': photoUrl }] } as DocumentFilter<RecipeData>
+  })
+  return items
+}
+
 const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export const queryRecipePage = async (

@@ -101,6 +101,8 @@ documents may also use `mongodb`. Filesystem data is stored under
 configurable, including `NUXT_MONGODB_USERS_COLLECTION`). Users and their
 favorites are stored through the same document backend. Accounts can be
 self-registered; passwords are stored as scrypt hashes. Configure
+`NUXT_LEGACY_RECIPE_OWNER_ID` (optional account ID that is assigned any recipes
+created before ownership existed, at startup), and
 `NUXT_SESSION_PASSWORD` with a secret of at least 32 characters in every
 deployed environment to encrypt authentication cookies. The repository layer keeps API handlers independent of the
 backend, and the `$test` configuration selects memory engines.

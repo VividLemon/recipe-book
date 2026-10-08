@@ -95,11 +95,6 @@
             :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
-          <RecipesShowRecipeModal
-            v-model="openRecipe"
-            :recipe="currentRecipe"
-            @hidden="currentRecipe = null"
-          />
           <div ref="sentinel" class="text-center my-3">
             <BButton
               v-if="recipes.hasNextPage.value"
@@ -131,6 +126,11 @@
         </BAlert>
       </BCol>
     </BRow>
+    <RecipesShowRecipeModal
+      v-model="openRecipe"
+      :recipe="currentRecipe"
+      @hidden="currentRecipe = null"
+    />
   </BContainer>
 </template>
 
@@ -160,7 +160,7 @@ watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
   if (!isLoggedIn && sortBy === 'favorite') {
     update({ sortBy: '' }, { replace: true })
   }
-})
+}, { immediate: true })
 
 const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
