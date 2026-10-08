@@ -33,24 +33,26 @@ export const matchesDocumentFilter = <T>(
   })
 }
 
-export const compareDocuments = <T>(
-  a: T,
-  b: T,
-  query: Pick<DocumentQuery<T>, 'sortBy' | 'sortDirection'>
-) => {
-  const direction = query.sortDirection === 'desc' ? -1 : 1
-
-  if (query.sortBy) {
-    const key = query.sortBy
-    const valueA = a[key]
-    const valueB = b[key]
-    const result = typeof valueA === 'number' && typeof valueB === 'number'
-      ? valueA - valueB
-      : String(valueA).localeCompare(String(valueB))
-    const idA = String((a as { id?: string }).id ?? '')
-    const idB = String((b as { id?: string }).id ?? '')
-    return result * direction || idA.localeCompare(idB)
+export const compareDocuments = <T>(a: T, b: T, query: Pick<DocumentQuery<T>, 'sort'>) => {
+  for (const sort of query.sort ?? []) {
+    const valueA = a[sort.field]
+    const valueB = b[sort.field]
+    let result: number
+    if (sort.priorityValues) {
+      const rankA = sort.priorityValues.indexOf(valueA)
+      const rankB = sort.priorityValues.indexOf(valueB)
+      const normalizedRankA = rankA === -1 ? sort.priorityValues.length : rankA
+      const normalizedRankB = rankB === -1 ? sort.priorityValues.length : rankB
+      result = normalizedRankA - normalizedRankB
+    } else {
+      result = typeof valueA === 'number' && typeof valueB === 'number'
+        ? valueA - valueB
+        : String(valueA).localeCompare(String(valueB))
+    }
+    if (result) return result * (sort.direction === 'desc' ? -1 : 1)
   }
 
-  return 0
+  const idA = String((a as { id?: string }).id ?? '')
+  const idB = String((b as { id?: string }).id ?? '')
+  return idA.localeCompare(idB)
 }

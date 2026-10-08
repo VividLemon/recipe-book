@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     event,
     recipes.delete.params.parse
   )
-  const deletedRecipe = await deleteRecipe(id, user.id)
+  const deletedRecipe = await deleteRecipe({ id, userId: user.id })
   event.waitUntil(deleteRecipePhotoData(deletedRecipe).catch((e) => {
     consola.error('Cleanup deleted recipe photos exited with error:', e)
   }))

@@ -35,11 +35,12 @@ export const registerUser = async ({
     passwordHash: await hashPassword(password),
     favorites: []
   }
-  await useUserRepository().set(user)
+  await useUserRepository().replaceOne({ id: user.id }, user)
   return user
 }
 
-export const updateUser = async (user: UserData) => useUserRepository().set(user)
+export const updateUser = async (user: UserData) =>
+  useUserRepository().replaceOne({ id: user.id }, user)
 
 export const updatePassword = async ({
   userId,
@@ -50,11 +51,11 @@ export const updatePassword = async ({
   oldPassword: string
   newPassword: string
 }) => {
-  const user = await useUserRepository().get(userId)
+  const user = await useUserRepository().findOne({ id: userId })
   if (!user || !await verifyPassword(user.passwordHash, oldPassword)) {
     throw incorrectCurrentPasswordError()
   }
-  await useUserRepository().set({
+  await useUserRepository().replaceOne({ id: user.id }, {
     ...user,
     passwordHash: await hashPassword(newPassword)
   })

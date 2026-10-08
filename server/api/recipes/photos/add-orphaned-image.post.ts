@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   ])
 
   if (query?.id) {
-    const recipe = await useRecipeRepository().get(query.id)
+    const recipe = await useRecipeRepository().findOne({ id: query.id })
     if (!recipe || recipe.ownerId !== user.id) throw notFoundError
   }
 

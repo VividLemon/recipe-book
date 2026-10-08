@@ -4,7 +4,7 @@ import { accountMissingError } from '../../users/errors'
 
 export default defineEventHandler(async (event) => {
   const { user: sessionUser } = await requireUserSession(event)
-  const user = await useUserRepository().get(sessionUser.id)
+  const user = await useUserRepository().findOne({ id: sessionUser.id })
   if (!user) throw accountMissingError()
   return publicUser(user)
 })

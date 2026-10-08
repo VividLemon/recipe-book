@@ -7,12 +7,17 @@ export type DocumentFilter<T> = Partial<Record<keyof T, unknown>> & {
   $and?: DocumentFilter<T>[]
 }
 
+export interface DocumentSort<T> {
+  field: keyof T
+  direction: 'asc' | 'desc'
+  priorityValues?: readonly unknown[]
+}
+
 export interface DocumentQuery<T> {
   offset?: number
   limit?: number
   filter?: DocumentFilter<T>
-  sortBy?: keyof T
-  sortDirection?: 'asc' | 'desc'
+  sort?: DocumentSort<T>[]
 }
 
 export interface DocumentPage<T> {
@@ -22,13 +27,16 @@ export interface DocumentPage<T> {
   limit?: number
 }
 
-export interface DocumentEngine<T> {
-  get(id: StorageId): Promise<T | null>
+export interface DocumentEngine<T extends { id: StorageId }> {
+  insertOne(value: T): Promise<void>
+  insertMany(values: T[]): Promise<void>
+  find(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
   findOne(filter: DocumentFilter<T>): Promise<T | null>
-  list(query?: DocumentQuery<T>): Promise<T[]>
-  page(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
-  set(id: StorageId, value: T): Promise<void>
-  remove(id: StorageId): Promise<void>
+  updateOne(filter: DocumentFilter<T>, update: Partial<T>): Promise<void>
+  updateMany(filter: DocumentFilter<T>, update: Partial<T>): Promise<void>
+  replaceOne(filter: DocumentFilter<T>, replacement: T): Promise<void>
+  deleteOne(filter: DocumentFilter<T>): Promise<void>
+  deleteMany(filter: DocumentFilter<T>): Promise<void>
 }
 
 export interface FileEngine {

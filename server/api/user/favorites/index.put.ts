@@ -8,8 +8,8 @@ export default defineEventHandler(async (event) => {
   const { user: sessionUser } = await requireUserSession(event)
   const body = await readValidatedBody(event, favoriteUpdate.parse)
   const [user, recipe] = await Promise.all([
-    useUserRepository().get(sessionUser.id),
-    getAccessibleRecipe(body.recipeId, sessionUser.id)
+    useUserRepository().findOne({ id: sessionUser.id }),
+    getAccessibleRecipe({ id: body.recipeId, userId: sessionUser.id })
   ])
   if (!user) throw accountMissingError()
   if (!recipe) throw recipeNotFoundError()
@@ -18,6 +18,6 @@ export default defineEventHandler(async (event) => {
   if (body.favorite) favorites.add(body.recipeId)
   else favorites.delete(body.recipeId)
   user.favorites = [...favorites]
-  await useUserRepository().set(user)
+  await useUserRepository().replaceOne({ id: user.id }, user)
   return user.favorites
 })

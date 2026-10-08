@@ -34,27 +34,24 @@ export const queryRecipePage = async (
   const repository = useRecipeRepository()
   const filter = { $and: filters }
   const offset = (page - 1) * pageSize
-  const result = await repository.page(sort === 'favorite'
-    ? { filter }
-    : {
+  const result = await repository.find({
         filter,
         offset,
         limit: pageSize,
-        sortBy: sort ?? 'createdAt',
-        sortDirection: query.order === 'desc' ? 'desc' : 'asc'
+        sort: sort === 'favorite'
+          ? [{
+              field: 'id',
+              direction: query.order === 'desc' ? 'desc' : 'asc',
+              priorityValues: [...favoriteIds]
+            }]
+          : [{
+              field: sort ?? 'createdAt',
+              direction: query.order === 'desc' ? 'desc' : 'asc'
+            }]
       })
-  const items = sort === 'favorite'
-    ? result.items
-        .sort((a, b) => {
-          const rank = Number(favoriteIds.has(b.id)) - Number(favoriteIds.has(a.id))
-          const direction = query.order === 'desc' ? -1 : 1
-          return rank * direction || a.id.localeCompare(b.id)
-        })
-        .slice(offset, offset + pageSize)
-    : result.items
 
   return {
-    items,
+    items: result.items,
     total: result.total,
     page,
     pageSize,

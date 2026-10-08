@@ -1,22 +1,19 @@
 import type { DocumentEngine, DocumentFilter, DocumentPage, DocumentQuery, StorageId } from '../contracts'
-import { compareDocuments, matchesDocumentFilter } from './query'
+import { matchesDocumentFilter, compareDocuments } from './query'
 
-export class MemoryDocumentEngine<T> implements DocumentEngine<T> {
+export class MemoryDocumentEngine<T extends { id: StorageId }> implements DocumentEngine<T> {
   private readonly documents = new Map<StorageId, T>()
 
-  async get(id: StorageId) {
-    return this.documents.get(id) ?? null
+  async insertOne(value: T) {
+    if (this.documents.has(value.id)) throw new Error(`Document ${value.id} already exists`)
+    this.documents.set(value.id, structuredClone(value))
   }
 
-  async findOne(filter: DocumentFilter<T>) {
-    return this.documents.values().find((value) => matchesDocumentFilter(value, filter)) ?? null
+  async insertMany(values: T[]) {
+    for (const value of values) await this.insertOne(value)
   }
 
-  async list(query?: DocumentQuery<T>) {
-    return (await this.page(query)).items
-  }
-
-  async page(query: DocumentQuery<T> = {}): Promise<DocumentPage<T>> {
+  async find(query: DocumentQuery<T> = {}): Promise<DocumentPage<T>> {
     const values = this.documents.values()
       .filter((value) => matchesDocumentFilter(value, query.filter))
       .toArray()
@@ -26,11 +23,35 @@ export class MemoryDocumentEngine<T> implements DocumentEngine<T> {
     return { items: values.slice(offset, query.limit === undefined ? undefined : offset + Math.max(0, query.limit)), total, offset, limit: query.limit }
   }
 
-  async set(id: StorageId, value: T) {
-    this.documents.set(id, structuredClone(value))
+  async findOne(filter: DocumentFilter<T>) {
+    return this.documents.values().find((value) => matchesDocumentFilter(value, filter)) ?? null
   }
 
-  async remove(id: StorageId) {
-    this.documents.delete(id)
+  async updateOne(filter: DocumentFilter<T>, update: Partial<T>) {
+    const value = await this.findOne(filter)
+    if (value) this.documents.set(value.id, { ...value, ...structuredClone(update), id: value.id })
+  }
+
+  async updateMany(filter: DocumentFilter<T>, update: Partial<T>) {
+    const values = this.documents.values().filter((value) => matchesDocumentFilter(value, filter)).toArray()
+    for (const value of values) {
+      this.documents.set(value.id, { ...value, ...structuredClone(update), id: value.id })
+    }
+  }
+
+  async replaceOne(filter: DocumentFilter<T>, replacement: T) {
+    const existing = await this.findOne(filter)
+    if (existing) this.documents.delete(existing.id)
+    this.documents.set(replacement.id, structuredClone(replacement))
+  }
+
+  async deleteOne(filter: DocumentFilter<T>) {
+    const value = await this.findOne(filter)
+    if (value) this.documents.delete(value.id)
+  }
+
+  async deleteMany(filter: DocumentFilter<T>) {
+    const values = this.documents.values().filter((value) => matchesDocumentFilter(value, filter)).toArray()
+    for (const value of values) this.documents.delete(value.id)
   }
 }

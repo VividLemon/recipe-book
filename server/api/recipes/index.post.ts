@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  const created = await createRecipe(parsed, user.id)
+  const created = await createRecipe({ input: parsed, userId: user.id })
   setResponseStatus(event, 201)
   return mapRecipeDataToWeb(created, await getRecipeTags())
 })

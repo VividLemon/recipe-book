@@ -3,7 +3,7 @@ import { useRecipeTagsRepository } from './repository'
 import { v7 } from 'uuid'
 
 export const getRecipeTags = async (): Promise<RecipeTagData[]> =>
-  useRecipeTagsRepository().list()
+  (await useRecipeTagsRepository().find()).items
 
 export type CreateRecipeTagInput = Omit<RecipeTagData, 'id' | 'createdAt'>
 
@@ -15,9 +15,9 @@ export const createRecipeTag = async (
     id: v7(),
     createdAt: Date.now()
   }
-  await useRecipeTagsRepository().set(tag)
+  await useRecipeTagsRepository().replaceOne({ id: tag.id }, tag)
   return tag
 }
 
 export const deleteRecipeTag = async (id: string) =>
-  useRecipeTagsRepository().remove(id)
+  useRecipeTagsRepository().deleteOne({ id })

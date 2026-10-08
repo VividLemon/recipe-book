@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     getValidatedRouterParams(event, recipes.update.params.parse),
   ])
 
-  const {newRecipe, previousRecipe} = await updateRecipe(id, parsed, user.id)
+  const {newRecipe, previousRecipe} = await updateRecipe({ id, input: parsed, userId: user.id })
 
   // Cleanup previous recipe photos if a new cover image was uploaded
   if (parsed.coverImage) {

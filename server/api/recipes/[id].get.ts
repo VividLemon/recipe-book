@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   )
   const session = await getUserSession(event)
   const [item, tags] = await Promise.all([
-    getAccessibleRecipe(id, session.user?.id),
+    getAccessibleRecipe({ id, userId: session.user?.id }),
     getRecipeTags()
   ])
   return item ? mapRecipeDataToWeb(item, tags) : null

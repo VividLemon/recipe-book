@@ -5,34 +5,58 @@ import { normalizeStorageError, type DocumentEngine, type DocumentFilter, type D
 
 export class DocumentRepository<T extends { id: string }> {
   constructor(private readonly engine: DocumentEngine<T>) {}
-  async get(id: string) {
-    try { return await this.engine.get(id) } catch (error) {
-      throw normalizeStorageError(error, 'read-failed', `Could not read document ${id}`)
+
+  async insertOne(value: T) {
+    try { await this.engine.insertOne(value) } catch (error) {
+      throw normalizeStorageError(error, 'write-failed', `Could not insert document ${value.id}`)
     }
   }
-  async list(query?: DocumentQuery<T>) {
-    try { return await this.engine.list(query) } catch (error) {
-      throw normalizeStorageError(error, 'read-failed', 'Could not list documents')
+
+  async insertMany(values: T[]) {
+    try { await this.engine.insertMany(values) } catch (error) {
+      throw normalizeStorageError(error, 'write-failed', 'Could not insert documents')
     }
   }
-  async page(query?: DocumentQuery<T>): Promise<DocumentPage<T>> {
-    try { return await this.engine.page(query) } catch (error) {
-      throw normalizeStorageError(error, 'read-failed', 'Could not page documents')
+
+  async find(query?: DocumentQuery<T>): Promise<DocumentPage<T>> {
+    try { return await this.engine.find(query) } catch (error) {
+      throw normalizeStorageError(error, 'read-failed', 'Could not find documents')
     }
   }
+
   async findOne(filter: DocumentFilter<T>) {
     try { return await this.engine.findOne(filter) } catch (error) {
       throw normalizeStorageError(error, 'read-failed', 'Could not find document')
     }
   }
-  async set(value: T) {
-    try { await this.engine.set(value.id, value) } catch (error) {
-      throw normalizeStorageError(error, 'write-failed', `Could not write document ${value.id}`)
+
+  async updateOne(filter: DocumentFilter<T>, update: Partial<T>) {
+    try { await this.engine.updateOne(filter, update) } catch (error) {
+      throw normalizeStorageError(error, 'write-failed', 'Could not update document')
     }
   }
-  async remove(id: string) {
-    try { await this.engine.remove(id) } catch (error) {
-      throw normalizeStorageError(error, 'delete-failed', `Could not delete document ${id}`)
+
+  async updateMany(filter: DocumentFilter<T>, update: Partial<T>) {
+    try { await this.engine.updateMany(filter, update) } catch (error) {
+      throw normalizeStorageError(error, 'write-failed', 'Could not update documents')
+    }
+  }
+
+  async replaceOne(filter: DocumentFilter<T>, replacement: T) {
+    try { await this.engine.replaceOne(filter, replacement) } catch (error) {
+      throw normalizeStorageError(error, 'write-failed', `Could not replace document ${replacement.id}`)
+    }
+  }
+
+  async deleteOne(filter: DocumentFilter<T>) {
+    try { await this.engine.deleteOne(filter) } catch (error) {
+      throw normalizeStorageError(error, 'delete-failed', 'Could not delete document')
+    }
+  }
+
+  async deleteMany(filter: DocumentFilter<T>) {
+    try { await this.engine.deleteMany(filter) } catch (error) {
+      throw normalizeStorageError(error, 'delete-failed', 'Could not delete documents')
     }
   }
 }

@@ -12,12 +12,12 @@ export default defineEventHandler(async (event): Promise<RecipePageResponse> => 
   let favoriteIds = new Set<string>()
   if (query.sort === 'favorite') {
     if (!session.user?.id) throw recipeLoginRequiredError()
-    const user = await useUserRepository().get(session.user.id)
+    const user = await useUserRepository().findOne({ id: session.user.id })
     favoriteIds = new Set(user?.favorites ?? [])
   }
   const [tags, page] = await Promise.all([
     getRecipeTags(),
-    listRecipes(query, session.user?.id, favoriteIds)
+    listRecipes({ query, userId: session.user?.id, favoriteIds })
   ])
 
   return { ...page, items: page.items.map((el) => mapRecipeDataToWeb(el, tags)) }
