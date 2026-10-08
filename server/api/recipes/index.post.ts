@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  const created = await createRecipe(parsed)
+  const [created, tags] = await Promise.all([createRecipe(parsed), getRecipeTags()])
   setResponseStatus(event, 201)
-  return mapRecipeDataToWeb(created, await getRecipeTags())
+  return mapRecipeDataToWeb(created, tags)
 })
