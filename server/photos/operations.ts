@@ -92,7 +92,7 @@ export const deleteRecipePhotoData = async (recipe: RecipeData) => {
 }
 
 export const deleteRecipePhotos = async (recipeId: string) => {
-  const item = await useRecipeRepository().get(recipeId)
+  const item = await useRecipeRepository().findOne({ id: recipeId })
   if (!item) throw notFoundError
   await deleteRecipePhotoData(item)
 }

@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   const photoUrl = `/api/photos/${name}`
   const [session, recipes] = await Promise.all([
     getUserSession(event),
-    useRecipeRepository().list()
+    useRecipeRepository().find().then(({ items }) => items)
   ])
   if (!canAccessPhoto(recipes, photoUrl, session.user?.id)) throw notFoundError
 

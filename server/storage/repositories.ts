@@ -1,7 +1,7 @@
 import type { RecipeData } from '../recipes/types'
 import type { RecipeTagData } from '../recipe-tags/types'
 import type { UserData } from '../users/types'
-import { normalizeStorageError, type DocumentEngine, type DocumentFilter, type DocumentPage, type DocumentQuery, type FileEngine } from './contracts'
+import { normalizeStorageError, type DocumentEngine, type DocumentFilter, type DocumentPage, type DocumentQuery, type DocumentUpdate, type FileEngine } from './contracts'
 
 export class DocumentRepository<T extends { id: string }> {
   constructor(private readonly engine: DocumentEngine<T>) {}
@@ -30,13 +30,13 @@ export class DocumentRepository<T extends { id: string }> {
     }
   }
 
-  async updateOne(filter: DocumentFilter<T>, update: Partial<T>) {
+  async updateOne(filter: DocumentFilter<T>, update: DocumentUpdate<T>) {
     try { await this.engine.updateOne(filter, update) } catch (error) {
       throw normalizeStorageError(error, 'write-failed', 'Could not update document')
     }
   }
 
-  async updateMany(filter: DocumentFilter<T>, update: Partial<T>) {
+  async updateMany(filter: DocumentFilter<T>, update: DocumentUpdate<T>) {
     try { await this.engine.updateMany(filter, update) } catch (error) {
       throw normalizeStorageError(error, 'write-failed', 'Could not update documents')
     }

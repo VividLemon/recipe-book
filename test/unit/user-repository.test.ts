@@ -14,7 +14,7 @@ const user: UserData = {
 describe('user repository lookups', () => {
   beforeEach(async () => {
     const repositories = configureStorage({ documentBackend: 'memory', fileBackend: 'memory' })
-    await repositories.users.set(user)
+    await repositories.users.replaceOne({ id: user.id }, user)
   })
 
   it('looks up normalized emails and case-insensitive usernames in the repository', async () => {
@@ -24,6 +24,6 @@ describe('user repository lookups', () => {
   })
 
   it('stores users through the configured repository', async () => {
-    await expect(useUserRepository().get(user.id)).resolves.toEqual(user)
+    await expect(useUserRepository().findOne({ id: user.id })).resolves.toEqual(user)
   })
 })

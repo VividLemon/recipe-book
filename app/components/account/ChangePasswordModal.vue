@@ -73,8 +73,8 @@ const {
   validationSchema: toTypedSchema(
     object({
       oldPassword: string().min(1).max(128),
-      newPassword: string().min(8).max(128),
-      confirmPassword: string().min(8).max(128)
+      newPassword: string().min(1).max(128),
+      confirmPassword: string().min(1).max(128)
     }).refine((values) => values.newPassword === values.confirmPassword, {
       path: ['confirmPassword'],
       message: 'Passwords do not match'

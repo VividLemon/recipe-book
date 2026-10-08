@@ -26,10 +26,10 @@ describe('recipe repository queries', () => {
   beforeEach(async () => {
     const repositories = configureStorage({ documentBackend: 'memory', fileBackend: 'memory' })
     await Promise.all([
-      repositories.recipes.set(makeRecipe('hidden-1', 1, 'other', false)),
-      repositories.recipes.set(makeRecipe('hidden-2', 2, 'other', false)),
-      repositories.recipes.set(makeRecipe('owned', 3, 'owner', false)),
-      repositories.recipes.set(makeRecipe('public', 4, 'other', true))
+      repositories.recipes.replaceOne({ id: 'hidden-1' }, makeRecipe('hidden-1', 1, 'other', false)),
+      repositories.recipes.replaceOne({ id: 'hidden-2' }, makeRecipe('hidden-2', 2, 'other', false)),
+      repositories.recipes.replaceOne({ id: 'owned' }, makeRecipe('owned', 3, 'owner', false)),
+      repositories.recipes.replaceOne({ id: 'public' }, makeRecipe('public', 4, 'other', true))
     ])
   })
 

@@ -52,7 +52,10 @@ export const compareDocuments = <T>(a: T, b: T, query: Pick<DocumentQuery<T>, 's
     if (result) return result * (sort.direction === 'desc' ? -1 : 1)
   }
 
-  const idA = String((a as { id?: string }).id ?? '')
-  const idB = String((b as { id?: string }).id ?? '')
-  return idA.localeCompare(idB)
+  if (query.sort?.length) {
+    const idA = String((a as { id?: string }).id ?? '')
+    const idB = String((b as { id?: string }).id ?? '')
+    return idA.localeCompare(idB)
+  }
+  return 0
 }

@@ -6,7 +6,7 @@ export const useFavoriteRecipe = () => {
   const favorites = useState<string[]>('recipe-favorites', () => [])
   const loadedForUser = useState<string | null>('recipe-favorites-user', () => null)
   const isLoading = useState<boolean>('recipe-favorites-loading', () => false)
-  const favoriteIds = computed(() => new Set(favorites.value))
+  const favoriteIds = computed<ReadonlySet<string>>(() => new Set(favorites.value))
   const { loggedIn, user } = useUserSession()
   const queryCache = useQueryCache()
   const requestFetch = useRequestFetch()
@@ -72,7 +72,7 @@ export const useFavoriteRecipe = () => {
   watch([loggedIn, () => user.value?.id], () => refreshFavorites(true), { immediate: true })
 
   return {
-    favorites: readonly(favorites),
+    favoriteIds,
     hasFavorite,
     refreshFavorites,
     toggleFavorite

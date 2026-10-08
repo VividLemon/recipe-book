@@ -1,4 +1,4 @@
-import type { DocumentEngine, DocumentFilter, DocumentPage, DocumentQuery, StorageId } from '../contracts'
+import type { DocumentEngine, DocumentFilter, DocumentPage, DocumentQuery, DocumentUpdate, StorageId } from '../contracts'
 import { matchesDocumentFilter, compareDocuments } from './query'
 
 export class MemoryDocumentEngine<T extends { id: StorageId }> implements DocumentEngine<T> {
@@ -17,7 +17,7 @@ export class MemoryDocumentEngine<T extends { id: StorageId }> implements Docume
     const values = this.documents.values()
       .filter((value) => matchesDocumentFilter(value, query.filter))
       .toArray()
-    values.sort((a, b) => compareDocuments(a, b, query))
+      .sort((a, b) => compareDocuments(a, b, query))
     const offset = Math.max(0, query.offset ?? 0)
     const total = values.length
     return { items: values.slice(offset, query.limit === undefined ? undefined : offset + Math.max(0, query.limit)), total, offset, limit: query.limit }
@@ -27,12 +27,12 @@ export class MemoryDocumentEngine<T extends { id: StorageId }> implements Docume
     return this.documents.values().find((value) => matchesDocumentFilter(value, filter)) ?? null
   }
 
-  async updateOne(filter: DocumentFilter<T>, update: Partial<T>) {
+  async updateOne(filter: DocumentFilter<T>, update: DocumentUpdate<T>) {
     const value = await this.findOne(filter)
     if (value) this.documents.set(value.id, { ...value, ...structuredClone(update), id: value.id })
   }
 
-  async updateMany(filter: DocumentFilter<T>, update: Partial<T>) {
+  async updateMany(filter: DocumentFilter<T>, update: DocumentUpdate<T>) {
     const values = this.documents.values().filter((value) => matchesDocumentFilter(value, filter)).toArray()
     for (const value of values) {
       this.documents.set(value.id, { ...value, ...structuredClone(update), id: value.id })
@@ -41,8 +41,12 @@ export class MemoryDocumentEngine<T extends { id: StorageId }> implements Docume
 
   async replaceOne(filter: DocumentFilter<T>, replacement: T) {
     const existing = await this.findOne(filter)
-    if (existing) this.documents.delete(existing.id)
-    this.documents.set(replacement.id, structuredClone(replacement))
+    if (existing) {
+      if (existing.id !== replacement.id) throw new Error('Cannot change a document ID')
+      this.documents.set(existing.id, structuredClone(replacement))
+      return
+    }
+    await this.insertOne(replacement)
   }
 
   async deleteOne(filter: DocumentFilter<T>) {

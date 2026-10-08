@@ -13,6 +13,8 @@ export interface DocumentSort<T> {
   priorityValues?: readonly unknown[]
 }
 
+export type DocumentUpdate<T> = Partial<Omit<T, 'id'>>
+
 export interface DocumentQuery<T> {
   offset?: number
   limit?: number
@@ -32,8 +34,8 @@ export interface DocumentEngine<T extends { id: StorageId }> {
   insertMany(values: T[]): Promise<void>
   find(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
   findOne(filter: DocumentFilter<T>): Promise<T | null>
-  updateOne(filter: DocumentFilter<T>, update: Partial<T>): Promise<void>
-  updateMany(filter: DocumentFilter<T>, update: Partial<T>): Promise<void>
+  updateOne(filter: DocumentFilter<T>, update: DocumentUpdate<T>): Promise<void>
+  updateMany(filter: DocumentFilter<T>, update: DocumentUpdate<T>): Promise<void>
   replaceOne(filter: DocumentFilter<T>, replacement: T): Promise<void>
   deleteOne(filter: DocumentFilter<T>): Promise<void>
   deleteMany(filter: DocumentFilter<T>): Promise<void>
