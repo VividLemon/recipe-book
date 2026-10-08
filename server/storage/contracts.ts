@@ -2,12 +2,24 @@ import type { Readable } from 'node:stream'
 
 export type StorageId = string
 
+export type DocumentFilter<T> = Partial<Record<keyof T, unknown>> & {
+  $or?: DocumentFilter<T>[]
+  $and?: DocumentFilter<T>[]
+}
+
+export interface DocumentSort<T> {
+  field: keyof T
+  direction: 'asc' | 'desc'
+  priorityValues?: readonly unknown[]
+}
+
+export type DocumentUpdate<T> = Partial<Omit<T, 'id'>>
+
 export interface DocumentQuery<T> {
   offset?: number
   limit?: number
-  filter?: Partial<T>
-  sortBy?: keyof T
-  sortDirection?: 'asc' | 'desc'
+  filter?: DocumentFilter<T>
+  sort?: DocumentSort<T>[]
 }
 
 export interface DocumentPage<T> {
@@ -17,12 +29,16 @@ export interface DocumentPage<T> {
   limit?: number
 }
 
-export interface DocumentEngine<T> {
-  get(id: StorageId): Promise<T | null>
-  list(query?: DocumentQuery<T>): Promise<T[]>
-  page(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
-  set(id: StorageId, value: T): Promise<void>
-  remove(id: StorageId): Promise<void>
+export interface DocumentEngine<T extends { id: StorageId }> {
+  insertOne(value: T): Promise<void>
+  insertMany(values: T[]): Promise<void>
+  find(query?: DocumentQuery<T>): Promise<DocumentPage<T>>
+  findOne(filter: DocumentFilter<T>): Promise<T | null>
+  updateOne(filter: DocumentFilter<T>, update: DocumentUpdate<T>): Promise<void>
+  updateMany(filter: DocumentFilter<T>, update: DocumentUpdate<T>): Promise<void>
+  replaceOne(filter: DocumentFilter<T>, replacement: T): Promise<void>
+  deleteOne(filter: DocumentFilter<T>): Promise<void>
+  deleteMany(filter: DocumentFilter<T>): Promise<void>
 }
 
 export interface FileEngine {

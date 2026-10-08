@@ -4,6 +4,7 @@ import { getRecipeTags } from '../../recipe-tags/service'
 import { mapRecipeDataToWeb } from '../../utils/mappers'
 
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const parsed = await
     (readMultipartFormData(event)
       .then((raw) => {
@@ -15,7 +16,10 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  const [created, tags] = await Promise.all([createRecipe(parsed), getRecipeTags()])
+  const [created, tags] = await Promise.all([
+    createRecipe({ input: parsed, userId: user.id }),
+    getRecipeTags()
+  ])
   setResponseStatus(event, 201)
   return mapRecipeDataToWeb(created, tags)
 })

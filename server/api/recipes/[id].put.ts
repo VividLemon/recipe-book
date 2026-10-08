@@ -7,6 +7,7 @@ import { recipes } from '../../utils/validation'
 import { consola } from 'consola';
 
 export default defineEventHandler(async (event) => {
+  const { user } = await requireUserSession(event)
   const [parsed, { id }] = await Promise.all([
     readMultipartFormData(event)
       .then((raw) => {
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
     getValidatedRouterParams(event, recipes.update.params.parse),
   ])
 
-  const {newRecipe, previousRecipe} = await updateRecipe(id, parsed)
+  const {newRecipe, previousRecipe} = await updateRecipe({ id, input: parsed, userId: user.id })
 
   // Cleanup previous recipe photos if a new cover image was uploaded
   if (parsed.coverImage) {

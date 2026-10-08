@@ -87,11 +87,14 @@ export const listRemovedRecipePhotoUrls = ({
 export const deletePhotos = async (photos: string[]) =>
   Promise.all(photos.map((photo) => deletePhoto(photo)))
 
+export const deleteRecipePhotoData = async (recipe: RecipeData) => {
+  if (recipe.photos) await deletePhotos(listRecipePhotoUrls(recipe))
+}
+
 export const deleteRecipePhotos = async (recipeId: string) => {
-  const item = await useRecipeRepository().get(recipeId)
+  const item = await useRecipeRepository().findOne({ id: recipeId })
   if (!item) throw notFoundError
-  if (!item.photos) return
-  await deletePhotos(listRecipePhotoUrls(item))
+  await deleteRecipePhotoData(item)
 }
 
 export const cleanupOrphanedPhotos = async (recipes: RecipeData[]) => {

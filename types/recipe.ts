@@ -135,6 +135,8 @@ export interface IngredientData {
 
 export interface RecipeData {
   id: string
+  ownerId?: string
+  isPublic?: boolean
   createdAt: number
   updatedAt: number
   name: string
@@ -260,6 +262,8 @@ export interface RecipeTagWeb {
 
 export interface RecipeWeb {
   id: string
+  ownerId?: string
+  isPublic?: boolean
   createdAt: number
   updatedAt: number
   name: string
@@ -291,7 +295,7 @@ export interface ListRecipesApiQuery {
   name?: string
   tag?: string
   difficulty?: RecipeDifficultyWeb
-  sort?: RecipeSortFieldWeb
+  sort?: RecipeSortFieldWeb | 'favorite'
   order?: RecipeSortOrderWeb
   page?: number
   pageSize?: number
@@ -329,6 +333,7 @@ export interface UpdateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
+  isPublic?: boolean
   coverImage?: Buffer
 }
 
@@ -339,6 +344,7 @@ export interface CreateRecipeRequest {
   difficulty: RecipeDifficultyWeb
   time: number
   tags: string[]
+  isPublic?: boolean
   coverImage?: Buffer
   stepsImages?: string[]
 }

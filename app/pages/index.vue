@@ -87,12 +87,12 @@
           <RecipesGrid
             v-if="tableMode === 'Grid'"
             :per-row="gridPerRow"
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
           <RecipesTable
             v-else
-            :recipes="computedRecipes"
+            :recipes="recipes.items.value"
             @open-recipe="onOpenRecipe"
           />
           <RecipesShowRecipeModal
@@ -143,9 +143,8 @@ import {
 import ArrowUpIcon from '~icons/bi/arrow-up'
 import ArrowDownIcon from '~icons/bi/arrow-down'
 import type { RecipeListSortBy } from '~/utils/recipeQuery'
-import { fetchRecipe } from '~/queries/recipes'
 
-const { hasFavorite } = useFavoriteRecipe()
+const { loggedIn } = useUserSession()
 
 const tableModes = ['Grid', 'Table'] as const
 const tableMode = useLocalStorage<(typeof tableModes)[number]>(
@@ -157,18 +156,20 @@ const tableMode = useLocalStorage<(typeof tableModes)[number]>(
 )
 
 const { query, update } = useRecipeListRoute()
+watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
+  if (!isLoggedIn && sortBy === 'favorite') {
+    update({ sortBy: '' }, { replace: true })
+  }
+})
 
-const sortByOptions: {
-  text: string
-  value: RecipeListSortBy
-}[] = [
+const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
-  { text: 'Favorite', value: 'favorite' },
+  ...(loggedIn.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },
   { text: 'Time', value: 'time' }
-] as const
+] as const)
 const toggleSortOrder = () => {
   update({ sortOrder: query.value.sortOrder === 'asc' ? 'desc' : 'asc' })
 }
@@ -183,18 +184,7 @@ const recipeTagOptions = computed(() => [
 ])
 
 const recipes = useRecipeList(query)
-
-// Filtering, other sorting and pagination happen on the server. "Favorite" is
-// local-only state, so it reorders the loaded recipes.
-const computedRecipes = computed<RecipeWeb[]>(() => {
-  const items = recipes.items.value
-  if (query.value.sortBy !== 'favorite') return items
-  const favorites = items.filter((el) => hasFavorite(el.id))
-  const others = items.filter((el) => !hasFavorite(el.id))
-  return query.value.sortOrder === 'asc'
-    ? [...favorites, ...others]
-    : [...others, ...favorites]
-})
+const requestFetch = useRequestFetch()
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 useIntersectionObserver(sentinel, ([entry]) => {
@@ -212,7 +202,7 @@ const currentRecipe = ref<RecipeWeb | null>(null)
 const onOpenRecipe = async (id: string) => {
   currentRecipe.value =
     recipes.items.value.find((el) => el.id === id)
-    || (await fetchRecipe(id).catch(() => null))
+    || (await requestFetch(`/api/recipes/${id}`).catch(() => null))
   if (currentRecipe.value) {
     openRecipe.value = true
   }

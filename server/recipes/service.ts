@@ -4,8 +4,7 @@ import {
   type RecipeData,
   type UpdateRecipeRequest
 } from '../../types/recipe'
-import { useRecipeRepository } from './repository'
-import { queryRecipes } from './query'
+import { queryRecipePage, useRecipeRepository } from './repository'
 import {
   deletePhoto,
   deletePhotos,
@@ -20,8 +19,15 @@ import { v7 } from 'uuid'
 import { consola } from 'consola'
 import { notFoundError } from '../utils/errors'
 import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
+import { canAccessRecipe, canManageRecipe } from './access'
 
-export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeData> => {
+export const createRecipe = async ({
+  input,
+  userId
+}: {
+  input: CreateRecipeRequest
+  userId: string
+}): Promise<RecipeData> => {
   const { coverImage: file, ...rest } = input
 
   const photoResult = file ? await processPhotoWithThumbnail(file) : undefined
@@ -29,6 +35,8 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
 
   const recipe: RecipeData = {
     ...rest,
+    ownerId: userId,
+    isPublic: rest.isPublic ?? true,
     id: v7(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -44,7 +52,7 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
   }
 
   try {
-    await useRecipeRepository().set(recipe)
+    await useRecipeRepository().replaceOne({ id: recipe.id }, recipe)
   }
   catch (e) {
     if (photoResult?.photos) await cleanupUploadedCoverImage(photoResult.photos)
@@ -54,14 +62,19 @@ export const createRecipe = async (input: CreateRecipeRequest): Promise<RecipeDa
   return recipe
 }
 
-export const updateRecipe = async (
-  id: string,
+export const updateRecipe = async ({
+  id,
+  input,
+  userId
+}: {
+  id: string
   input: UpdateRecipeRequest
-) => {
+  userId: string
+}) => {
   const { coverImage: file, ...rest } = input
 
-  const previous = await useRecipeRepository().get(id)
-  if (!previous) throw notFoundError
+  const previous = await useRecipeRepository().findOne({ id })
+  if (!previous || !canManageRecipe(previous, userId)) throw notFoundError
 
   const photo = file ? await processPhotoWithThumbnail(file) : undefined
   if (photo?.error) throw photo.error
@@ -69,6 +82,7 @@ export const updateRecipe = async (
   const recipe: RecipeData = {
     ...previous,
     ...rest,
+    isPublic: rest.isPublic ?? previous.isPublic !== false,
     updatedAt: Date.now(),
     ingredients: rest.ingredients.map(mapIngredientWebToData),
     difficulty: mapRecipeDifficultyWebToData(rest.difficulty),
@@ -79,7 +93,7 @@ export const updateRecipe = async (
   }
 
   try {
-    await useRecipeRepository().set(recipe)
+    await useRecipeRepository().replaceOne({ id: recipe.id }, recipe)
   }
   catch (e) {
     if (photo?.photos) await cleanupUploadedCoverImage(photo.photos)
@@ -101,7 +115,7 @@ const cleanupUploadedCoverImage = async (photos: NonNullable<RecipeData['photos'
 }
 
 export const addStepPhoto = async (recipe: RecipeData, photo: string) =>
-  useRecipeRepository().set({
+  useRecipeRepository().replaceOne({ id: recipe.id }, {
     ...recipe,
     photos: {
       ...recipe.photos,
@@ -119,7 +133,7 @@ export const addOrphanedStepPhoto = async ({
   preserveAspectRatio?: boolean
 }): Promise<string> => {
   const [recipeResult, photoResult] = await Promise.allSettled([
-    recipeId ? useRecipeRepository().get(recipeId) : Promise.resolve(null),
+    recipeId ? useRecipeRepository().findOne({ id: recipeId }) : Promise.resolve(null),
     processPhoto(file, {
       maximumDimensions: maximumRecipeStepsPhotoDimensions,
       preserveAspectRatio: preserveAspectRatio,
@@ -170,5 +184,25 @@ export const addOrphanedStepPhoto = async ({
 export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeData) =>
   deletePhotos(listRemovedRecipePhotoUrls({ previous, next }))
 
-export const listRecipes = async (query: ListRecipesApiQuery = {}) =>
-  queryRecipes(await useRecipeRepository().list(), query)
+export const listRecipes = async ({
+  query = {},
+  userId,
+  favoriteIds = new Set()
+}: {
+  query?: ListRecipesApiQuery
+  userId?: string
+  favoriteIds?: ReadonlySet<string>
+} = {}) => queryRecipePage(query, userId, favoriteIds)
+
+export const getAccessibleRecipe = async ({ id, userId }: { id: string; userId?: string }) => {
+  const recipe = await useRecipeRepository().findOne({ id })
+  if (!recipe || !canAccessRecipe(recipe, userId)) return null
+  return recipe
+}
+
+export const deleteRecipe = async ({ id, userId }: { id: string; userId: string }) => {
+  const recipe = await useRecipeRepository().findOne({ id })
+  if (!recipe || !canManageRecipe(recipe, userId)) throw notFoundError
+  await useRecipeRepository().deleteOne({ id })
+  return recipe
+}

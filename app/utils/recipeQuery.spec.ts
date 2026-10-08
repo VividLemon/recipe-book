@@ -39,8 +39,8 @@ describe('recipe list query', () => {
     ).toEqual({ name: 'a', tag: 't', difficulty: 'Hard', sort: 'name', order: 'desc', page: 1, pageSize: 12 })
   })
 
-  it('does not send the client-only favorite sort to the server', () => {
+  it('sends favorite sorting to the server', () => {
     const api = mapRecipeListQueryToApi({ ...defaultRecipeListQuery(), sortBy: 'favorite' })
-    expect(api).not.toHaveProperty('sort')
+    expect(api.sort).toBe('favorite')
   })
 })

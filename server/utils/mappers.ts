@@ -82,6 +82,8 @@ export const mapRecipeDataToWeb = (
   tags: RecipeTagData[]
 ): RecipeWeb => ({
   id: recipe.id,
+  ownerId: recipe.ownerId,
+  isPublic: recipe.isPublic !== false,
   createdAt: recipe.createdAt,
   updatedAt: recipe.updatedAt,
   name: recipe.name,

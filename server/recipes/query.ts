@@ -15,7 +15,8 @@ export interface RecipeListPage {
 /** Applies name/tag/difficulty filters, sorting and page-number pagination. */
 export const queryRecipes = (
   recipes: RecipeData[],
-  query: ListRecipesApiQuery = {}
+  query: ListRecipesApiQuery = {},
+  favoriteIds: ReadonlySet<string> = new Set()
 ): RecipeListPage => {
   const name = query.name?.trim().toLowerCase()
   let values = recipes.filter((el) =>
@@ -28,6 +29,10 @@ export const queryRecipes = (
   const direction = query.order === 'desc' ? -1 : 1
   values = [...values].sort((a, b) => {
     if (!sort) return a.createdAt - b.createdAt || a.id.localeCompare(b.id)
+    if (sort === 'favorite') {
+      const rank = Number(favoriteIds.has(b.id)) - Number(favoriteIds.has(a.id))
+      return rank * direction || a.id.localeCompare(b.id)
+    }
     const valueA = a[sort]
     const valueB = b[sort]
     const result = typeof valueA === 'number' && typeof valueB === 'number'

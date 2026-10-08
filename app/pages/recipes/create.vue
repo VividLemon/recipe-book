@@ -8,6 +8,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ middleware: 'authenticated' })
+
 import { buildOptimisticRecipe } from '~/queries/recipeCache'
 import type { IngredientWeb, recipeDifficultyWeb } from '../../../types/recipe'
 import type { CreateRecipeModel } from '../../components/recipes/CreateUpdate.vue'
@@ -23,6 +25,7 @@ const recipe = ref<CreateRecipeModel>({
   difficulty: null as null | (typeof recipeDifficultyWeb)[number],
   time: null,
   coverImage: null as File | null,
+  isPublic: true,
   tags: [] as string[],
   stepsImages: [] as string[]
 })
