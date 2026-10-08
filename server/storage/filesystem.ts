@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs'
+import { createReadStream, createWriteStream } from 'node:fs'
 import { access, mkdir, open, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
@@ -42,9 +42,9 @@ export class FilesystemFileEngine implements FileEngine {
     const path = this.path(key)
     await mkdir(join(this.directory, key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : ''), { recursive: true })
     temporary = `${path}.${process.pid}.${Date.now()}.tmp`
-    const handle = await open(temporary, 'wx')
+    await pipeline(value, createWriteStream(temporary, { flags: 'wx' }))
+    const handle = await open(temporary, 'r+')
     try {
-      await pipeline(value, handle.createWriteStream())
       await handle.sync()
     } finally {
       await handle.close()
