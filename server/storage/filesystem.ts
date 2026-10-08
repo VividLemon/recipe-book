@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { access, mkdir, open, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { access, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import type { FileEngine } from './contracts'
 import { assertStorageKey, normalizeStorageError, StorageError } from './contracts'
@@ -21,39 +22,37 @@ export class FilesystemFileEngine implements FileEngine {
     }
   }
 
+  private async prepare(key: string) {
+    const path = this.path(key)
+    await mkdir(dirname(path), { recursive: true })
+    return { path, temporary: `${path}.${process.pid}.${randomUUID()}.tmp` }
+  }
+
   async put(key: string, value: Buffer | Uint8Array) {
     let temporary: string | undefined
     try {
-      const path = this.path(key)
-      await mkdir(join(this.directory, key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : ''), { recursive: true })
-    temporary = `${path}.${process.pid}.${Date.now()}.tmp`
+      const prepared = await this.prepare(key)
+      temporary = prepared.temporary
       await writeFile(temporary, value, { flag: 'wx' })
-      await rename(temporary, path)
-    temporary = undefined
+      await rename(temporary, prepared.path)
+      temporary = undefined
     } catch (error) {
-    if (temporary) await rm(temporary, { force: true }).catch(() => undefined)
-    throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
+      if (temporary) await rm(temporary, { force: true }).catch(() => undefined)
+      throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
     }
   }
 
   async putStream(key: string, value: AsyncIterable<Uint8Array> | import('node:stream').Readable) {
     let temporary: string | undefined
     try {
-    const path = this.path(key)
-    await mkdir(join(this.directory, key.includes('/') ? key.slice(0, key.lastIndexOf('/')) : ''), { recursive: true })
-    temporary = `${path}.${process.pid}.${Date.now()}.tmp`
-    await pipeline(value, createWriteStream(temporary, { flags: 'wx' }))
-    const handle = await open(temporary, 'r+')
-    try {
-      await handle.sync()
-    } finally {
-      await handle.close()
-    }
-    await rename(temporary, path)
-    temporary = undefined
+      const prepared = await this.prepare(key)
+      temporary = prepared.temporary
+      await pipeline(value, createWriteStream(temporary, { flags: 'wx' }))
+      await rename(temporary, prepared.path)
+      temporary = undefined
     } catch (error) {
-    if (temporary) await rm(temporary, { force: true }).catch(() => undefined)
-    throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
+      if (temporary) await rm(temporary, { force: true }).catch(() => undefined)
+      throw normalizeStorageError(error, 'write-failed', `Could not write file ${key}`)
     }
   }
 

@@ -67,7 +67,7 @@ const getValidatedPhotoType = async (input: Buffer) => {
 // Deleting
 export const deletePhoto = (nameOrUrl: string) => usePhotoFiles().remove(toStorageKey(nameOrUrl))
 
-const listRecipePhotoUrls = (recipe: Pick<RecipeData, 'photos'>): string[] => [
+export const listRecipePhotoUrls = (recipe: Pick<RecipeData, 'photos'>): string[] => [
   ...listImageVariantUrls(recipe.photos?.coverImage?.default),
   ...listImageVariantUrls(recipe.photos?.coverImage?.thumbnail),
   ...(recipe.photos?.stepsImages ?? [])

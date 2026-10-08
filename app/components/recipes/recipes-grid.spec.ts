@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RecipesGrid from './RecipesGrid.vue'
+
+vi.mock('../../composables/useToaster', () => ({
+  useToaster: () => ({
+    apiSucceeded: vi.fn(),
+    apiError: vi.fn()
+  })
+}))
 
 describe('RecipesGrid', () => {
   it('renders recipe cards and emits the selected recipe id', async () => {

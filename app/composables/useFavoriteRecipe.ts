@@ -2,7 +2,11 @@ import { useQueryCache } from '@pinia/colada'
 import { recipeKeys } from '~/queries/recipes'
 import { updateFavoriteIds } from '~/utils/favorites'
 
+let toggleQueue: Promise<unknown> = Promise.resolve()
+let pendingToggles = 0
+
 export const useFavoriteRecipe = () => {
+  const toaster = useToaster()
   const favorites = useState<string[]>('recipe-favorites', () => [])
   const loadedForUser = useState<string | null>('recipe-favorites-user', () => null)
   const isLoading = useState<boolean>('recipe-favorites-loading', () => false)
@@ -33,7 +37,7 @@ export const useFavoriteRecipe = () => {
         loadedForUser.value = requestedUserId
       }
     } catch (error) {
-      await using _ = await useToaster().apiError(error)
+      await using _ = await toaster.apiError(error)
     } finally {
       isLoading.value = false
       if (loggedIn.value && user.value?.id !== requestedUserId) {
@@ -48,25 +52,35 @@ export const useFavoriteRecipe = () => {
       return
     }
     const userId = user.value.id
-    const previous = favorites.value
     const shouldFavorite = !hasFavorite(id)
-    favorites.value = updateFavoriteIds(previous, id, shouldFavorite)
-    loadedForUser.value = user.value.id
+    favorites.value = updateFavoriteIds(favorites.value, id, shouldFavorite)
+    loadedForUser.value = userId
 
-    try {
-      const ids = await requestFetch<string[]>('/api/user/favorites', {
-        method: 'PUT',
-        body: { recipeId: id, favorite: shouldFavorite }
-      })
-      if (user.value?.id === userId) {
-        favorites.value = [...new Set(ids)]
-        loadedForUser.value = userId
-        await queryCache.invalidateQueries({ key: recipeKeys.root })
+    pendingToggles++
+    const request = toggleQueue.then(async () => {
+      try {
+        const ids = await requestFetch<string[]>('/api/user/favorites', {
+          method: 'PUT',
+          body: { recipeId: id, favorite: shouldFavorite }
+        })
+        if (user.value?.id === userId) {
+          if (pendingToggles === 1) {
+            favorites.value = [...new Set(ids)]
+            loadedForUser.value = userId
+          }
+          await queryCache.invalidateQueries({ key: recipeKeys.root })
+        }
+      } catch (error) {
+        if (user.value?.id === userId) {
+          favorites.value = updateFavoriteIds(favorites.value, id, !shouldFavorite)
+        }
+        await using _ = await toaster.apiError(error)
+      } finally {
+        pendingToggles--
       }
-    } catch (error) {
-      if (user.value?.id === userId) favorites.value = previous
-      await using _ = await useToaster().apiError(error)
-    }
+    })
+    toggleQueue = request.catch(() => undefined)
+    await request
   }
 
   watch([loggedIn, () => user.value?.id], () => refreshFavorites(true), { immediate: true })
