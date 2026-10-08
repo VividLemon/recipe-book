@@ -1,12 +1,17 @@
-import { array, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
+import { array, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
 import {
   type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
   recipeDifficultyData,
   ingredientUnitsWeb,
   type CreateRecipeRequest,
+  type ListRecipesApiQuery,
   type UpdateRecipeRequest,
-  recipeTagVariantsWeb
+  recipeTagVariantsWeb,
+  recipeDifficultyWeb,
+  recipeSortFieldsWeb,
+  recipeSortOrdersWeb,
+  maximumRecipePageSize
 } from '../../types/recipe'
 import { getRecipeTags } from '../recipe-tags/service'
 
@@ -89,6 +94,17 @@ export const recipes = {
     params: object({
       id: string().nonempty()
     })
+  },
+  list: {
+    query: object({
+      name: string().optional(),
+      tag: string().optional(),
+      difficulty: zodEnum(recipeDifficultyWeb).optional(),
+      sort: zodEnum(recipeSortFieldsWeb).optional(),
+      order: zodEnum(recipeSortOrdersWeb).optional(),
+      page: coerce.number().int().min(1).optional(),
+      pageSize: coerce.number().int().min(1).max(maximumRecipePageSize).optional()
+    } satisfies Record<keyof ListRecipesApiQuery, unknown>)
   },
   read: {}
 } satisfies Record<string, ValidatorObject>

@@ -1,5 +1,7 @@
 import { deserializeFormData } from '~/utils/serialization'
 import { createRecipe } from '../../recipes/service'
+import { getRecipeTags } from '../../recipe-tags/service'
+import { mapRecipeDataToWeb } from '../../utils/mappers'
 
 export default defineEventHandler(async (event) => {
   const parsed = await
@@ -13,6 +15,7 @@ export default defineEventHandler(async (event) => {
         return result.data
       }))
 
-  await createRecipe(parsed)
+  const [created, tags] = await Promise.all([createRecipe(parsed), getRecipeTags()])
   setResponseStatus(event, 201)
+  return mapRecipeDataToWeb(created, tags)
 })
