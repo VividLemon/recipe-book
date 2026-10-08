@@ -2,7 +2,7 @@ import { PassThrough } from 'node:stream'
 import { fileTypeFromStream } from 'file-type'
 import { usePhotoFiles } from '../../photos/repository'
 import { photoMimeTypes } from '../../photos/utils'
-import { useRecipeRepository } from '../../recipes/repository'
+import { findRecipesByPhotoUrl } from '../../recipes/repository'
 import { canAccessPhoto } from '../../photos/access'
 
 /**
@@ -15,12 +15,17 @@ export default defineEventHandler(async (event) => {
   // Defense in depth: reject any traversal/absolute-path attempt before it
   // ever reaches a storage driver (not all drivers guard against `..`
   // segments or leading slashes the same way).
-  if (!name || name.includes('..') || name.startsWith('/')) throw notFoundError
+  if (
+    !name
+    || name.includes('..')
+    || name.startsWith('/')
+    || name.split('/').some((part) => !part)
+  ) throw notFoundError
 
   const photoUrl = `/api/photos/${name}`
   const [session, recipes] = await Promise.all([
     getUserSession(event),
-    useRecipeRepository().find().then(({ items }) => items)
+    findRecipesByPhotoUrl(photoUrl)
   ])
   if (!canAccessPhoto(recipes, photoUrl, session.user?.id)) throw notFoundError
 

@@ -4,10 +4,9 @@ import {
   type RecipeData,
   type UpdateRecipeRequest
 } from '../../types/recipe'
-import { queryRecipePage, useRecipeRepository } from './repository'
+import { findRecipesByPhotoUrl, queryRecipePage, useRecipeRepository } from './repository'
 import {
   deletePhoto,
-  deletePhotos,
   listRemovedRecipePhotoUrls,
   processPhoto,
   processPhotoWithThumbnail
@@ -17,9 +16,31 @@ import { mapIngredientWebToData, mapRecipeDifficultyWebToData } from '../utils/m
 import sanitizeHtml from 'sanitize-html'
 import { v7 } from 'uuid'
 import { consola } from 'consola'
-import { notFoundError } from '../utils/errors'
+import { notFoundError, photoError } from '../utils/errors'
 import { maximumRecipeStepsPhotoDimensions } from '~/utils/shared'
 import { canAccessRecipe, canManageRecipe } from './access'
+
+const assertStepPhotosAttachable = async (
+  urls: string[] | undefined,
+  userId: string,
+  recipeId?: string
+) => {
+  const referenced = await Promise.all((urls ?? []).map(async (url) => {
+    const owners = (await findRecipesByPhotoUrl(url)).filter((recipe) => recipe.id !== recipeId)
+    return owners.every((recipe) => canManageRecipe(recipe, userId))
+  }))
+  if (referenced.some((allowed) => !allowed)) {
+    throw photoError({ message: 'Step photo is attached to a recipe you do not own' })
+  }
+}
+
+export const deleteUnreferencedPhotos = async (urls: string[], excludeRecipeId: string) => {
+  await Promise.all(urls.map(async (url) => {
+    const owners = await findRecipesByPhotoUrl(url)
+    if (owners.some((recipe) => recipe.id !== excludeRecipeId)) return
+    await deletePhoto(url)
+  }))
+}
 
 export const createRecipe = async ({
   input,
@@ -30,6 +51,7 @@ export const createRecipe = async ({
 }): Promise<RecipeData> => {
   const { coverImage: file, ...rest } = input
 
+  await assertStepPhotosAttachable(rest.stepsImages, userId)
   const photoResult = file ? await processPhotoWithThumbnail(file) : undefined
   if (photoResult?.error) throw photoResult.error
 
@@ -182,7 +204,7 @@ export const addOrphanedStepPhoto = async ({
 }
 
 export const cleanupReplacedRecipePhotos = (previous: RecipeData, next: RecipeData) =>
-  deletePhotos(listRemovedRecipePhotoUrls({ previous, next }))
+  deleteUnreferencedPhotos(listRemovedRecipePhotoUrls({ previous, next }), next.id)
 
 export const listRecipes = async ({
   query = {},

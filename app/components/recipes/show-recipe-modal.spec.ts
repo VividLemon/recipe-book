@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ShowRecipeModal from './ShowRecipeModal.vue'
 
+vi.mock('../../composables/useToaster', () => ({
+  useToaster: () => ({
+    apiSucceeded: vi.fn(),
+    apiError: vi.fn()
+  })
+}))
+
 vi.mock('../../composables/useSystemSettings', () => ({
   useSystemSettings: () => ({
     dense: { prefersDenseRecipeModal: { value: false } },

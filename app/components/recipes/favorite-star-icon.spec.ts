@@ -1,6 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import FavoriteStarIcon from './FavoriteStarIcon.vue'
+
+vi.mock('../../composables/useToaster', () => ({
+  useToaster: () => ({
+    apiSucceeded: vi.fn(),
+    apiError: vi.fn()
+  })
+}))
 
 describe('FavoriteStarIcon', () => {
   it('renders a star for the supplied recipe', () => {

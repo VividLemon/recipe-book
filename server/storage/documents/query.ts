@@ -2,7 +2,8 @@ import type { DocumentFilter, DocumentQuery } from '../contracts'
 
 const matchesValue = (actual: unknown, expected: unknown) => {
   if (expected && typeof expected === 'object' && !Array.isArray(expected)) {
-    const operators = expected as { $ne?: unknown; $regex?: string; $options?: string }
+    const operators = expected as { $ne?: unknown; $exists?: boolean; $regex?: string; $options?: string }
+    if (typeof operators.$exists === 'boolean' && (actual !== undefined) !== operators.$exists) return false
     if ('$ne' in operators && actual === operators.$ne) return false
     if (typeof operators.$regex === 'string') {
       return typeof actual === 'string'
@@ -29,7 +30,11 @@ export const matchesDocumentFilter = <T>(
     if (key === '$and') {
       return (expected as DocumentFilter<T>[]).every((child) => matchesDocumentFilter(value, child))
     }
-    return matchesValue((value as Record<string, unknown>)[key], expected)
+    const actual = key.split('.').reduce<unknown>(
+      (current, part) => (current as Record<string, unknown> | null | undefined)?.[part],
+      value
+    )
+    return matchesValue(actual, expected)
   })
 }
 
