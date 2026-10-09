@@ -15,12 +15,5 @@
 </template>
 
 <script setup lang="ts">
-const { applyUpdate, canInstall, dismissUpdate, install, updateAvailable } = usePwa()
-
-watch(canInstall, (available) => {
-  window.dispatchEvent(new CustomEvent('recipe-book:pwa-install-available', { detail: available }))
-}, { immediate: true })
-
-onMounted(() => window.addEventListener('recipe-book:pwa-install', install))
-onUnmounted(() => window.removeEventListener('recipe-book:pwa-install', install))
+const { applyUpdate, dismissUpdate, updateAvailable } = usePwa()
 </script>
