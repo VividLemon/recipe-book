@@ -1,9 +1,19 @@
-import type { ListRecipesApiQuery, RecipePageResponse, RecipeWeb } from '../../types/recipe'
+import type {
+  ImageFormatVariants,
+  ListRecipesApiQuery,
+  RecipePageResponse,
+  RecipeWeb
+} from '../../types/recipe'
 import { recipeMatchesQuery } from '~/queries/recipeCache'
 
 const storagePrefix = 'recipe-book:offline-recipes:'
 const cachePrefix = 'recipe-book:offline-photos:'
 const objectUrls = new Map<string, string>()
+
+export const offlineRecipeStorageKey = (userId?: string) =>
+  `${storagePrefix}${userId ?? 'guest'}`
+export const offlinePhotoCacheName = (userId?: string) =>
+  `${cachePrefix}${userId ?? 'guest'}`
 
 const imageUrls = (recipe: RecipeWeb) => [
   recipe.photos?.coverImage?.default,
@@ -15,8 +25,8 @@ const imageUrls = (recipe: RecipeWeb) => [
 export const useOfflineRecipes = () => {
   const { user } = useUserSession()
   const scope = () => user.value?.id ?? 'guest'
-  const storageKey = () => `${storagePrefix}${scope()}`
-  const cacheName = () => `${cachePrefix}${scope()}`
+  const storageKey = () => offlineRecipeStorageKey(scope())
+  const cacheName = () => offlinePhotoCacheName(scope())
 
   const read = (): RecipeWeb[] => {
     try {
@@ -71,15 +81,18 @@ export const useOfflineRecipes = () => {
       replacements.set(url, objectUrl)
     }))
     const replace = (url: string) => replacements.get(url) ?? url
-    const variants = (value?: Record<string, string>) =>
-      value && Object.fromEntries(Object.entries(value).map(([key, url]) => [key, replace(url)]))
+    const variants = (value: ImageFormatVariants): ImageFormatVariants => ({
+      original: replace(value.original),
+      webp: replace(value.webp),
+      avif: replace(value.avif)
+    })
     return {
       ...recipe,
       photos: recipe.photos && {
         ...recipe.photos,
         coverImage: recipe.photos.coverImage && {
-          default: variants(recipe.photos.coverImage.default) as typeof recipe.photos.coverImage.default,
-          thumbnail: variants(recipe.photos.coverImage.thumbnail) as typeof recipe.photos.coverImage.thumbnail
+          default: variants(recipe.photos.coverImage.default),
+          thumbnail: variants(recipe.photos.coverImage.thumbnail)
         },
         stepsImages: recipe.photos.stepsImages?.map(replace)
       },
