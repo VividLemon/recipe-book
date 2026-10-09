@@ -17,8 +17,49 @@ export default defineNuxtConfig({
     '@pinia/colada-nuxt',
     '@pinia/nuxt',
     '@vee-validate/nuxt',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    '@vite-pwa/nuxt'
   ],
+  app: {
+    head: {
+      meta: [
+        { name: 'theme-color', content: '#198754' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' }
+      ],
+      link: [
+        { rel: 'apple-touch-icon', href: '/pwa-icon.svg' }
+      ]
+    }
+  },
+  pwa: {
+    registerType: 'prompt',
+    manifest: {
+      name: 'Recipe Book',
+      short_name: 'Recipes',
+      description: 'Your recipes, available wherever you cook.',
+      theme_color: '#198754',
+      background_color: '#ffffff',
+      display: 'standalone',
+      start_url: '/',
+      icons: [
+        {
+          src: '/pwa-icon.svg',
+          sizes: 'any',
+          type: 'image/svg+xml',
+          purpose: 'any maskable'
+        }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/',
+      navigateFallbackDenylist: [/^\/api\//],
+      globPatterns: ['**/*.{js,css,html,ico,svg,png,webp,avif}']
+    },
+    client: {
+      installPrompt: false
+    }
+  },
   i18n: {
     defaultLocale: 'en',
     locales: [

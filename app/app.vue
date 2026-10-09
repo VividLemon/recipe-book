@@ -52,6 +52,9 @@
         </BCol>
       </BRow>
     </BContainer>
+    <ClientOnly>
+      <PwaStatus />
+    </ClientOnly>
   </BApp>
 </template>
 
@@ -65,11 +68,12 @@ provideSystemSettings()
 configureVeeValidate()
 
 const offcanvas = ref(false)
+const isOnline = useOnline()
 const { loggedIn } = useUserSession()
 
 const items = computed(() => [
   { title: 'Home', to: '/' },
-  ...(loggedIn.value ? [{ title: 'Create Recipe', to: '/recipes/create' }] : []),
+  ...(loggedIn.value && isOnline.value ? [{ title: 'Create Recipe', to: '/recipes/create' }] : []),
   { title: 'Settings', to: '/settings' }
 ])
 </script>

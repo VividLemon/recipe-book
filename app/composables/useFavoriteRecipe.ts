@@ -51,6 +51,10 @@ export const useFavoriteRecipe = () => {
       await navigateTo('/login')
       return
     }
+    if (import.meta.client && !navigator.onLine) {
+      toaster.error('Favorites cannot be changed while offline.')
+      return
+    }
     const userId = user.value.id
     const shouldFavorite = !hasFavorite(id)
     favorites.value = updateFavoriteIds(favorites.value, id, shouldFavorite)

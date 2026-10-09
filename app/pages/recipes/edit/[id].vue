@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'authenticated' })
+definePageMeta({ middleware: ['authenticated', 'offline'] })
 
 import { buildOptimisticRecipe } from '~/queries/recipeCache'
 import type { UpdateRecipeModel } from '../../../components/recipes/CreateUpdate.vue'

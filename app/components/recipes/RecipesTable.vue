@@ -5,7 +5,7 @@
   >
     <template #cell(Actions)="row">
       <BLink @click="emit('open-recipe', row.item.id)">View</BLink>
-      <BLink class="ms-1" :to="`/recipes/edit/${row.item.id}`">Edit</BLink>
+      <BLink v-if="isOnline" class="ms-1" :to="`/recipes/edit/${row.item.id}`">Edit</BLink>
     </template>
   </BTable>
 </template>
@@ -22,4 +22,5 @@ const emit = defineEmits<{
 }>()
 
 const formattedRecipes = useFormattedRecipe(() => props.recipes)
+const isOnline = useOnline()
 </script>

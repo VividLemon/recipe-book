@@ -17,6 +17,14 @@ interface Snapshot {
 
 export const useRecipeMutations = () => {
   const queryCache = useQueryCache()
+  const assertOnline = () => {
+    if (import.meta.client && !navigator.onLine) {
+      throw createError({
+        statusCode: 503,
+        statusMessage: 'Recipe changes are unavailable while offline.'
+      })
+    }
+  }
 
   const snapshot = (): Snapshot => {
     queryCache.cancelQueries({ key: recipeKeys.root })
@@ -54,8 +62,10 @@ export const useRecipeMutations = () => {
   const invalidate = () => queryCache.invalidateQueries({ key: recipeKeys.root })
 
   const create = useMutation({
-    mutation: ({ body }: { body: FormData, optimistic: RecipeWeb }) =>
-      $fetch<RecipeWeb>('/api/recipes', { method: 'POST', body }),
+    mutation: ({ body }: { body: FormData, optimistic: RecipeWeb }) => {
+      assertOnline()
+      return $fetch<RecipeWeb>('/api/recipes', { method: 'POST', body })
+    },
     onMutate: ({ optimistic }) => {
       const previous = snapshot()
       mapLists((data, query) =>
@@ -76,8 +86,10 @@ export const useRecipeMutations = () => {
   })
 
   const update = useMutation({
-    mutation: ({ id, body }: { id: string, body: FormData, optimistic: RecipeWeb }) =>
-      $fetch(`/api/recipes/${id}`, { method: 'PUT', body }),
+    mutation: ({ id, body }: { id: string, body: FormData, optimistic: RecipeWeb }) => {
+      assertOnline()
+      return $fetch(`/api/recipes/${id}`, { method: 'PUT', body })
+    },
     onMutate: ({ id, optimistic }) => {
       const previous = snapshot()
       mapLists((data) => updateRecipeInPages(data, optimistic))
@@ -89,8 +101,10 @@ export const useRecipeMutations = () => {
   })
 
   const remove = useMutation({
-    mutation: ({ id }: { id: string }) =>
-      $fetch(`/api/recipes/${id}`, { method: 'DELETE' }),
+    mutation: ({ id }: { id: string }) => {
+      assertOnline()
+      return $fetch(`/api/recipes/${id}`, { method: 'DELETE' })
+    },
     onMutate: ({ id }) => {
       const previous = snapshot()
       mapLists((data) => removeRecipeFromPages(data, id))

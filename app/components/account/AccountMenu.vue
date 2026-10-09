@@ -27,6 +27,7 @@ import { recipeKeys } from '~/queries/recipes'
 
 const { loggedIn, user, clear } = useUserSession()
 const queryCache = useQueryCache()
+const offlineRecipes = import.meta.client ? useOfflineRecipes() : null
 
 const flushCaches = () => {
   for (const entry of queryCache.getEntries({ key: recipeKeys.root })) {
@@ -36,6 +37,7 @@ const flushCaches = () => {
 
 const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
+  await offlineRecipes?.clear()
   await clear()
   flushCaches()
   await navigateTo('/login')

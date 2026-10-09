@@ -9,6 +9,9 @@
     <BFormCheckbox v-model="denseRecipeModal">
       Dense Recipe Modal
     </BFormCheckbox>
+    <ClientOnly>
+      <PwaInstallButton class="mt-3" />
+    </ClientOnly>
   </div>
 </template>
 
