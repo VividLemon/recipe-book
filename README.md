@@ -93,6 +93,10 @@ bun run preview
 
 ## Storage
 
+The PWA module is configured without additional environment variables. Copy
+`.env.example` when deploying and provide values for the existing storage and
+session settings listed there.
+
 Server persistence is provided by typed engines in `server/storage`. Configure
 `NUXT_DOCUMENT_BACKEND` and `NUXT_FILE_BACKEND` as `filesystem` or `memory`;
 documents may also use `mongodb`. Filesystem data is stored under
