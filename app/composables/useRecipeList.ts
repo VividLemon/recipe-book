@@ -21,7 +21,7 @@ export const useRecipeList = (query: MaybeRefOrGetter<RecipeListQuery>) =>
         }
         const page = await requestFetch<RecipePageResponse>('/api/recipes', {
           query: mapRecipeListQueryToApi(toValue(query), pageParam)
-        }),
+        })
         offline.savePage(page)
         return page
       },

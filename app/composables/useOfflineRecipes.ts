@@ -20,6 +20,11 @@ export const useOfflineRecipes = () => {
   const clear = () => {
     if (import.meta.client) recipes.value = []
   }
+  watch(() => user.value?.id, (id) => {
+    recipes.value = import.meta.client
+      ? JSON.parse(localStorage.getItem(storageKey(id)) || '[]') as RecipeWeb[]
+      : []
+  })
 
   return {
     items,

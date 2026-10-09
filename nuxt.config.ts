@@ -22,6 +22,7 @@ export default defineNuxtConfig({
   ],
   pwa: {
     registerType: 'autoUpdate',
+    installPrompt: 'recipe-book:pwa-install-dismissed',
     manifest: {
       name: 'Recipe Book',
       short_name: 'Recipes',
