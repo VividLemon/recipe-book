@@ -185,6 +185,7 @@ const recipeTagOptions = computed(() => [
 
 const recipes = useRecipeList(query)
 const requestFetch = useRequestFetch()
+const onlineRecipe = useOnlineRecipe()
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 useIntersectionObserver(sentinel, ([entry]) => {
@@ -202,7 +203,7 @@ const currentRecipe = ref<RecipeWeb | null>(null)
 const onOpenRecipe = async (id: string) => {
   currentRecipe.value =
     recipes.items.value.find((el) => el.id === id)
-    || (await requestFetch(`/api/recipes/${id}`).catch(() => null))
+    || (await onlineRecipe.fetch(id))
   if (currentRecipe.value) {
     openRecipe.value = true
   }

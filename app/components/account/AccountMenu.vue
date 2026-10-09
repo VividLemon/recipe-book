@@ -32,6 +32,7 @@ const flushCaches = () => {
   for (const entry of queryCache.getEntries({ key: recipeKeys.root })) {
     queryCache.remove(entry)
   }
+  useOfflineRecipes().clear()
 }
 
 const logout = async () => {

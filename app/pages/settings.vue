@@ -9,6 +9,17 @@
     <BFormCheckbox v-model="denseRecipeModal">
       Dense Recipe Modal
     </BFormCheckbox>
+    <div class="mt-3">
+      <BButton v-if="canInstall" variant="primary" @click="install">
+        Install Recipe Book
+      </BButton>
+      <BButton v-if="updateAvailable" class="ms-2" variant="warning" @click="applyUpdate">
+        Apply update
+      </BButton>
+      <BButton v-if="updateAvailable" class="ms-2" variant="link" @click="dismissUpdate">
+        Dismiss
+      </BButton>
+    </div>
   </div>
 </template>
 
@@ -28,5 +39,11 @@ const fileDownloadTypeOptions = Object.keys(objectToBlobSerializers).map(
 const denseRecipeModal = computed({
   get: () => settings.dense.prefersDenseRecipeModal.value,
   set: settings.dense.setDenseRecipeModal
+})
+
+const { isPWAInstalled, canInstall, install, applyUpdate, dismissUpdate, updateAvailable } = usePwa()
+const toaster = useToaster()
+watch(updateAvailable, (available) => {
+  if (available) void toaster.apiSucceeded('An update is available.')
 })
 </script>
