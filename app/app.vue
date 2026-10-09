@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { BButton } from 'bootstrap-vue-next'
 import MenuIcon from '~icons/bi/list'
 import {configureVeeValidate} from "~/utils/configureVeeValidate.ts";
 
@@ -63,6 +64,42 @@ useColorMode()
 const appConfig = useAppConfig()
 provideSystemSettings()
 configureVeeValidate()
+
+const { $pwa } = useNuxtApp()
+const { create: createToast } = useToast()
+let updateToast: ReturnType<typeof createToast> | undefined
+watch(
+  () => $pwa?.needRefresh,
+  (needRefresh) => {
+    if (!needRefresh || updateToast) return
+    updateToast = createToast({
+      title: 'Update available',
+      slots: {
+        default: () => h('div', [
+        h('p', 'A new version of Recipe Book is available.'),
+        h(
+          BButton,
+          {
+            size: 'sm',
+            variant: 'primary',
+            onClick: () => $pwa?.updateServiceWorker()
+          },
+          () => 'Update now'
+        )
+        ])
+      },
+      variant: 'info',
+      modelValue: false,
+      noAutoHide: true,
+      noProgress: true,
+      onHidden: () => {
+        updateToast = undefined
+      }
+    })
+    updateToast.show()
+  },
+  { immediate: true }
+)
 
 const offcanvas = ref(false)
 const { loggedIn } = useUserSession()

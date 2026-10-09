@@ -9,6 +9,11 @@
     <BFormCheckbox v-model="denseRecipeModal">
       Dense Recipe Modal
     </BFormCheckbox>
+    <div v-if="$pwa?.showInstallPrompt && !$pwa.isPWAInstalled" class="mt-3">
+      <BButton variant="primary" @click="$pwa.install()">
+        Install App
+      </BButton>
+    </div>
   </div>
 </template>
 
