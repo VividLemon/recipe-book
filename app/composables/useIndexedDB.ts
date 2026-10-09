@@ -1,4 +1,5 @@
 import { useStorageAsync } from '@vueuse/core'
+import { toRef, toValue, watch, type MaybeRefOrGetter } from 'vue'
 
 const databaseName = 'recipe-book-offline'
 const databaseVersion = 1
@@ -29,26 +30,30 @@ const run = <T>(store: string, mode: IDBTransactionMode, operation: (store: IDBO
     request.onerror = () => reject(request.error)
   }))
 
-const storage = {
-  getItem: async (key: string) => {
-    const value = await run<unknown>(recipeStore, 'readonly', store => store.get(key))
-    return value == null ? null : JSON.stringify(value)
-  },
-  setItem: async (key: string, value: string) => {
-    await run(recipeStore, 'readwrite', store => store.put(JSON.parse(value), key))
-  },
-  removeItem: async (key: string) => {
-    await run(recipeStore, 'readwrite', store => store.delete(key))
+export const useIndexedDB = <T>(key: MaybeRefOrGetter<string>, initialValue: T) => {
+  const keyRef = toRef(key)
+  const storage = {
+    getItem: async () => {
+      const stored = await run<unknown>(recipeStore, 'readonly', store => store.get(toValue(keyRef)))
+      return stored == null ? null : JSON.stringify(stored)
+    },
+    setItem: async (_key: string, value: string) => {
+      await run(recipeStore, 'readwrite', store => store.put(JSON.parse(value), toValue(keyRef)))
+    },
+    removeItem: async () => {
+      await run(recipeStore, 'readwrite', store => store.delete(toValue(keyRef)))
+    }
   }
-}
-
-export const useIndexedDB = <T>(key: string, initialValue: T) => {
-  const value = useStorageAsync<T>(key, initialValue, storage, {
+  const value = useStorageAsync<T>('reactive-key', initialValue, storage, {
     writeDefaults: true,
     serializer: {
       read: raw => JSON.parse(raw) as T,
       write: value => JSON.stringify(value)
     }
+  })
+  watch(keyRef, async () => {
+    const stored = await storage.getItem()
+    value.value = stored == null ? initialValue : JSON.parse(stored) as T
   })
 
   const putImage = async (imageKey: string, blob: Blob) => {

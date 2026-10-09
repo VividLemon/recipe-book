@@ -13,7 +13,7 @@ export const useOfflineRecipes = () => {
   const { user } = useUserSession()
   const online = useOnline()
   const scope = computed(() => scopeKey(user.value?.id))
-  const storage = useIndexedDB<RecipeWeb[]>(scope.value, [])
+  const storage = useIndexedDB<RecipeWeb[]>(scope, [])
   const recipes = shallowRef<RecipeWeb[]>([])
   let objectUrls: string[] = []
 
