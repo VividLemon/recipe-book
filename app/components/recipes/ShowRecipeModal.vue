@@ -11,7 +11,7 @@
       <div class="ms-auto d-flex align-items-center">
         <template v-if="readableRecipe">
           <BButton
-            v-if="isOwner && !previewMode"
+            v-if="isOwner && !previewMode && isOnline"
             :variant="null"
             :to="
               readableRecipe.id
@@ -155,6 +155,7 @@ const readableRecipe = computed(() =>
   props.recipe === null ? null : mapRecipeToHumanReadable(props.recipe)
 )
 const isOwner = computed(() => !!user.value && props.recipe?.ownerId === user.value.id)
+const isOnline = useOnline()
 
 const systemSettings = useSystemSettings()
 

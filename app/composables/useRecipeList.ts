@@ -1,5 +1,4 @@
 import { useInfiniteQuery } from '@pinia/colada'
-import type { RecipePageResponse } from '../../types/recipe'
 import { RECIPE_STALE_TIME, recipeKeys } from '~/queries/recipes'
 import { flattenRecipePages } from '~/queries/recipeCache'
 import { mapRecipeListQueryToApi, type RecipeListQuery } from '~/utils/recipeQuery'
@@ -10,13 +9,13 @@ import { mapRecipeListQueryToApi, type RecipeListQuery } from '~/utils/recipeQue
  */
 export const useRecipeList = (query: MaybeRefOrGetter<RecipeListQuery>) =>
   {
-    const requestFetch = useRequestFetch()
+    const recipes = useRecipes()
     const infinite = useInfiniteQuery({
       key: () => recipeKeys.list(mapRecipeListQueryToApi(toValue(query), 1)),
-      query: ({ pageParam }): Promise<RecipePageResponse> =>
-        requestFetch<RecipePageResponse>('/api/recipes', {
-          query: mapRecipeListQueryToApi(toValue(query), pageParam)
-        }),
+      query: ({ pageParam }) => {
+        const apiQuery = mapRecipeListQueryToApi(toValue(query), pageParam)
+        return recipes.getPage(apiQuery)
+      },
       initialPageParam: 1,
       getNextPageParam: (last) => last.nextPage,
       staleTime: RECIPE_STALE_TIME
