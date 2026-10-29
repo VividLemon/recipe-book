@@ -1,3 +1,5 @@
+import { offlineCacheNames } from './app/data/offline/cacheNames'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -44,7 +46,7 @@ export default defineNuxtConfig({
           urlPattern: ({ request }) => request.mode === 'navigate',
           handler: 'NetworkFirst',
           options: {
-            cacheName: 'pages',
+            cacheName: offlineCacheNames.pages,
             networkTimeoutSeconds: 3,
             // Any cached page renders the app; the list itself refetches client side
             matchOptions: { ignoreSearch: true },
@@ -55,7 +57,7 @@ export default defineNuxtConfig({
           urlPattern: /\/api\/photos\//,
           handler: 'CacheFirst',
           options: {
-            cacheName: 'recipe-photos',
+            cacheName: offlineCacheNames.photos,
             expiration: { maxEntries: 1000 },
             cacheableResponse: { statuses: [200] }
           }
@@ -64,7 +66,7 @@ export default defineNuxtConfig({
           urlPattern: /\/api\/(recipes|recipe-tags|user\/favorites)(\/[^/]+)?(\?|$)/,
           handler: 'NetworkFirst',
           options: {
-            cacheName: 'recipe-api',
+            cacheName: offlineCacheNames.api,
             networkTimeoutSeconds: 3,
             cacheableResponse: { statuses: [200] }
           }

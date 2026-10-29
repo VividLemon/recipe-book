@@ -27,3 +27,21 @@ describe('localRecipeStore', () => {
     expect((await localRecipeStore.getTags()).map((el) => el.id)).toEqual(['y'])
   })
 })
+
+describe('localRecipeStore sync helpers', () => {
+  it('replaces everything at once and clears on demand', async () => {
+    await localRecipeStore.putRecipes([recipe('stale', 1)])
+    await localRecipeStore.replaceAll({
+      recipes: [recipe('fresh', 1)],
+      tags: [{ id: 't', createdAt: 1, text: 'T' }],
+      meta: { userId: 'me', lastSyncedAt: 5 }
+    })
+    expect((await localRecipeStore.getAllRecipes()).map((el) => el.id)).toEqual(['fresh'])
+    expect(await localRecipeStore.getMeta()).toEqual({ userId: 'me', lastSyncedAt: 5 })
+
+    await localRecipeStore.clear()
+    expect(await localRecipeStore.getAllRecipes()).toEqual([])
+    expect(await localRecipeStore.getTags()).toEqual([])
+    expect(await localRecipeStore.getMeta()).toBeNull()
+  })
+})

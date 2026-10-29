@@ -1,4 +1,4 @@
-import { array, boolean, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, uuidv7 } from 'zod'
+import { array, boolean, coerce, enum as zodEnum, instanceof as zodInstanceof, number, object, string, stringbool, uuidv7 } from 'zod'
 import {
   type CreateRecipePhotoRequest,
   type CreateRecipeTagRequest,
@@ -105,7 +105,8 @@ export const recipes = {
       sort: zodEnum([...recipeSortFieldsWeb, 'favorite']).optional(),
       order: zodEnum(recipeSortOrdersWeb).optional(),
       page: coerce.number().int().min(1).optional(),
-      pageSize: coerce.number().int().min(1).max(maximumRecipePageSize).optional()
+      pageSize: coerce.number().int().min(1).max(maximumRecipePageSize).optional(),
+      mine: stringbool().optional()
     } satisfies Record<keyof ListRecipesApiQuery, unknown>)
   },
   read: {}

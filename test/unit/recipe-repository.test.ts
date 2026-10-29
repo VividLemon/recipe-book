@@ -41,6 +41,13 @@ describe('recipe repository queries', () => {
     expect(page.nextPage).toBe(2)
   })
 
+  it('limits to the user\'s own recipes when asked', async () => {
+    const page = await queryRecipePage({ mine: true }, 'owner', new Set())
+
+    expect(page.items.map((recipe) => recipe.id)).toEqual(['owned'])
+    expect(page.total).toBe(1)
+  })
+
   it('ranks favorites before paginating while keeping the full result count', async () => {
     const firstPage = await queryRecipePage(
       { sort: 'favorite', page: 1, pageSize: 1 },

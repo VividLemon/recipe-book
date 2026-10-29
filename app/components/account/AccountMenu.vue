@@ -24,6 +24,7 @@
 import { useQueryCache } from '@pinia/colada'
 import PersonCircleIcon from '~icons/bi/person-circle'
 import { recipeKeys } from '~/queries/recipes'
+import { wipeOfflineData } from '~/data/offline/wipe'
 
 const { loggedIn, user, clear } = useUserSession()
 const queryCache = useQueryCache()
@@ -38,6 +39,7 @@ const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await clear()
   flushCaches()
+  await wipeOfflineData().catch(() => {})
   await navigateTo('/login')
 }
 </script>

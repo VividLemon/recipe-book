@@ -299,6 +299,8 @@ export interface ListRecipesApiQuery {
   order?: RecipeSortOrderWeb
   page?: number
   pageSize?: number
+  /** Only the signed-in user's own recipes (used for offline sync). */
+  mine?: boolean
 }
 
 export interface RecipePageResponse {
