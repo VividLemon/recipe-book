@@ -122,7 +122,7 @@
         </BAlert>
         <BAlert v-else :model-value="true" variant="info"
           >No recipes have been made! Make one
-          <BLink to="/recipes/create">here</BLink>
+          <BLink to="/recipes/create" :disabled="offline">here</BLink>
         </BAlert>
       </BCol>
     </BRow>
@@ -145,6 +145,7 @@ import ArrowDownIcon from '~icons/bi/arrow-down'
 import type { RecipeListSortBy } from '~/utils/recipeQuery'
 
 const { loggedIn } = useUserSession()
+const offline = useOffline()
 
 const tableModes = ['Grid', 'Table'] as const
 const tableMode = useLocalStorage<(typeof tableModes)[number]>(
@@ -156,15 +157,17 @@ const tableMode = useLocalStorage<(typeof tableModes)[number]>(
 )
 
 const { query, update } = useRecipeListRoute()
-watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
-  if (!isLoggedIn && sortBy === 'favorite') {
+// Favorite ranking needs the server, so it is unavailable logged out or offline
+const canSortByFavorite = computed(() => loggedIn.value && !offline.value)
+watch([canSortByFavorite, () => query.value.sortBy], ([canSort, sortBy]) => {
+  if (!canSort && sortBy === 'favorite') {
     update({ sortBy: '' }, { replace: true })
   }
 }, { immediate: true })
 
 const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
-  ...(loggedIn.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
+  ...(canSortByFavorite.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },

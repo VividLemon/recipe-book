@@ -18,6 +18,7 @@
                 ? `/recipes/edit/${readableRecipe.id}`
                 : undefined
             "
+            :disabled="offline"
             aria-label="Edit Recipe"
           >
             <PencilIcon />
@@ -25,6 +26,7 @@
           <BButton
             v-if="loggedIn"
             :variant="null"
+            :disabled="offline"
             @click="toggleFavorite(readableRecipe.id)"
           >
             <RecipesFavoriteStarIcon
@@ -145,6 +147,7 @@ const open = defineModel<boolean>({
 
 const { toggleFavorite } = useFavoriteRecipe()
 const { loggedIn, user } = useUserSession()
+const offline = useOffline()
 const defaultIngredientUnit: IngredientUnitWeb = 'units'
 
 const coverImageSources = computed(() =>
