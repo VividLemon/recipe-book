@@ -1,6 +1,7 @@
 import { setInfiniteQueryData, useMutation, useQueryCache } from '@pinia/colada'
 import type { RecipeWeb } from '../../types/recipe'
 import { recipeKeys } from '~/queries/recipes'
+import { localRecipeStore } from '~/data/recipes/localStore'
 import {
   appendRecipeToPages,
   recipeMatchesQuery,
@@ -66,6 +67,8 @@ export const useRecipeMutations = () => {
     },
     onSuccess: (created) => {
       queryCache.setQueryData(recipeKeys.detail(created.id), created)
+      // Updates arrive through the list refetch; creations and deletions are mirrored here
+      return localRecipeStore.putRecipes([created]).catch(() => {})
     },
     onError: (_error, _vars, { previous }) => restore(previous),
     onSettled: (_data, _error, _vars, { optimisticId }) => {
@@ -97,6 +100,7 @@ export const useRecipeMutations = () => {
       queryCache.setQueryData(recipeKeys.detail(id), null)
       return { previous }
     },
+    onSuccess: (_data, { id }) => localRecipeStore.deleteRecipe(id).catch(() => {}),
     onError: (_error, _vars, { previous }) => restore(previous),
     onSettled: () => invalidate()
   })

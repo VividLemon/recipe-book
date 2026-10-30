@@ -10,17 +10,16 @@ import { mapRecipeListQueryToApi, type RecipeListQuery } from '~/utils/recipeQue
  */
 export const useRecipeList = (query: MaybeRefOrGetter<RecipeListQuery>) =>
   {
-    const requestFetch = useRequestFetch()
+    const source = useRecipeSource()
     const infinite = useInfiniteQuery({
       key: () => recipeKeys.list(mapRecipeListQueryToApi(toValue(query), 1)),
       query: ({ pageParam }): Promise<RecipePageResponse> =>
-        requestFetch<RecipePageResponse>('/api/recipes', {
-          query: mapRecipeListQueryToApi(toValue(query), pageParam)
-        }),
+        source.listPage(mapRecipeListQueryToApi(toValue(query), pageParam)),
       initialPageParam: 1,
       getNextPageParam: (last) => last.nextPage,
       staleTime: RECIPE_STALE_TIME
     })
     const items = computed(() => flattenRecipePages(infinite.data.value))
+    useKeepRecipesOnDevice(items)
     return { ...infinite, items }
   }

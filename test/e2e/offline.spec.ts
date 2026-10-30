@@ -52,5 +52,10 @@ test('recipes and their photos stay viewable offline after a visit', async ({ pa
   await expect.poll(() => cardImage.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0)
   await expect(page.getByRole('link', { name: 'Create Recipe' })).toHaveClass(/disabled/)
 
+  // A filter never requested online is answered from the device copy
+  await page.getByLabel('Filter by Name:').fill(suffix)
+  await expect(page).toHaveURL(new RegExp(`name=${suffix}`))
+  await expect(page.getByRole('heading', { name }).first()).toBeVisible()
+
   await context.setOffline(false)
 })

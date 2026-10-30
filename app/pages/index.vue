@@ -179,7 +179,8 @@ const toggleSortOrder = () => {
 
 const gridPerRow = ref<number | 'auto'>('auto')
 
-const recipeTags = await useFetch('/api/recipe-tags')
+const source = useRecipeSource()
+const recipeTags = useRecipeTags()
 const recipeTagOptions = computed(() => [
   { text: 'Select a tag', value: '' },
   ...(recipeTags.data.value?.map((el) => ({ text: el.text, value: el.id })) ||
@@ -187,7 +188,6 @@ const recipeTagOptions = computed(() => [
 ])
 
 const recipes = useRecipeList(query)
-const requestFetch = useRequestFetch()
 
 const sentinel = useTemplateRef<HTMLElement>('sentinel')
 useIntersectionObserver(sentinel, ([entry]) => {
@@ -205,7 +205,7 @@ const currentRecipe = ref<RecipeWeb | null>(null)
 const onOpenRecipe = async (id: string) => {
   currentRecipe.value =
     recipes.items.value.find((el) => el.id === id)
-    || (await requestFetch(`/api/recipes/${id}`).catch(() => null))
+    || (await source.get(id).catch(() => null))
   if (currentRecipe.value) {
     openRecipe.value = true
   }
