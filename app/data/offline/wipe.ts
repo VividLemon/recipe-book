@@ -2,12 +2,12 @@ import { localRecipeStore } from '../recipes/localStore'
 import { offlineCacheNames } from './cacheNames'
 
 /**
- * Removes everything stored for offline use: device recipes, photos (some
- * private), API responses and cached pages (which embed the session user).
+ * Removes everything stored for the signed-in user: device recipes, tags and
+ * photos (some private). The app shell holds no user data and is kept.
  */
 export const wipeOfflineData = async () => {
   await Promise.all([
     localRecipeStore.clear(),
-    ...Object.values(offlineCacheNames).map((name) => caches.delete(name))
+    caches.delete(offlineCacheNames.photos)
   ])
 }

@@ -1,6 +1,5 @@
-import type { RecipeWeb } from '../../../types/recipe'
-import type { LocalRecipeStore } from './localStore'
-import type { RecipeSource } from './types'
+import type { RecipeTagWeb, RecipeWeb } from '../../../types/recipe'
+import type { RecipeSource, RecipeSourceOptions } from './types'
 
 /**
  * True when a request never got a usable answer from the server: no response
@@ -14,47 +13,66 @@ export const isNetworkError = (error: unknown) => {
   return status === undefined || status === 502 || status === 503 || status === 504
 }
 
+export interface DeviceWriter {
+  putRecipes(recipes: RecipeWeb[], userId: string): Promise<void>
+  replaceTags(tags: RecipeTagWeb[], userId: string): Promise<void>
+}
+
 /**
- * Decorates a remote source: results are copied into the device store as they
- * arrive, and the device copy answers when the network does not.
- * Only recipes accepted by `keep` (the user's own) are stored.
+ * Decorates a remote source: the signed-in user's own recipes (and the tags)
+ * are copied to the device as they arrive, and the device copy answers when
+ * the network does not.
  */
 export const withOfflineFallback = (
   remote: RecipeSource,
   local: RecipeSource,
-  store: Pick<LocalRecipeStore, 'putRecipes' | 'replaceTags'>,
-  { keep }: { keep: (recipe: RecipeWeb) => boolean }
+  store: DeviceWriter,
+  { userId }: { userId: () => string | null }
 ): RecipeSource => {
-  const fallback = async <T>(request: () => Promise<T>, offline: () => Promise<T>, save: (value: T) => Promise<void>) => {
+  const fallback = async <T>(
+    { signal }: RecipeSourceOptions,
+    request: () => Promise<T>,
+    offline: () => Promise<T>,
+    save: (value: T, owner: string) => Promise<void>
+  ) => {
     let value: T
     try {
       value = await request()
     } catch (error) {
-      if (isNetworkError(error)) return offline()
+      // A cancelled request is not an outage: report it rather than answer from the device
+      if (!signal?.aborted && isNetworkError(error)) return offline()
       throw error
     }
-    // Saving is best effort: a full or blocked IndexedDB must not break the page
-    await save(value).catch(() => {})
+    // A cancelled request may be outdated (e.g. a recipe deleted meanwhile), so it is not saved.
+    // The owner is read after the response so a sign-out during the request saves nothing.
+    const owner = userId()
+    if (owner && !signal?.aborted) {
+      // Saving is best effort: a full or blocked IndexedDB must not break the page
+      await save(value, owner).catch(() => {})
+    }
     return value
   }
 
   return {
-    listPage: (query) => fallback(
-      () => remote.listPage(query),
-      () => local.listPage(query),
-      (page) => store.putRecipes(page.items.filter(keep))
+    listPage: (query, options = {}) => fallback(
+      options,
+      () => remote.listPage(query, options),
+      () => local.listPage(query, options),
+      (page, owner) => store.putRecipes(page.items.filter((recipe) => recipe.ownerId === owner), owner)
     ),
-    get: (id) => fallback(
-      () => remote.get(id),
-      () => local.get(id),
-      async (recipe) => {
-        if (recipe && keep(recipe)) await store.putRecipes([recipe])
+    get: (id, options = {}) => fallback(
+      options,
+      () => remote.get(id, options),
+      () => local.get(id, options),
+      async (recipe, owner) => {
+        if (recipe?.ownerId === owner) await store.putRecipes([recipe], owner)
       }
     ),
-    listTags: () => fallback(
-      () => remote.listTags(),
-      () => local.listTags(),
-      (tags) => store.replaceTags(tags)
+    listTags: (options = {}) => fallback(
+      options,
+      () => remote.listTags(options),
+      () => local.listTags(options),
+      (tags, owner) => store.replaceTags(tags, owner)
     )
   }
 }

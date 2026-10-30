@@ -42,9 +42,10 @@ export const detectImageFormat = async (): Promise<ImageFormat> => {
 /**
  * Makes the photo cache hold exactly `urls`: missing ones are downloaded a few
  * at a time, and photos no longer used (deleted or other users' recipes) are
- * removed so private images do not linger.
+ * removed so private images do not linger. Stops writing once `signal` aborts.
  */
-export const syncPhotoCache = async (urls: string[], concurrency = 4) => {
+export const syncPhotoCache = async (urls: string[], signal: AbortSignal, concurrency = 4) => {
+  signal.throwIfAborted()
   const cache = await caches.open(offlineCacheNames.photos)
   const wanted = new Set(urls.map((url) => new URL(url, location.origin).href))
   const cached = await cache.keys()
@@ -54,11 +55,16 @@ export const syncPhotoCache = async (urls: string[], concurrency = 4) => {
 
   const have = new Set(cached.map((request) => request.url))
   const queue = [...wanted].filter((url) => !have.has(url))
+  let missing = 0
   const worker = async () => {
-    for (let url = queue.shift(); url; url = queue.shift()) {
-      // A single missing photo should not stop the rest
-      await cache.add(url).catch(() => {})
+    for (let url = queue.shift(); url && !signal.aborted; url = queue.shift()) {
+      const response = await fetch(url, { signal }).catch(() => null)
+      // Checked again after the download: a sign-out meanwhile must not store the photo
+      if (response?.ok && !signal.aborted) await cache.put(url, response)
+      else missing++
     }
   }
   await Promise.all(Array.from({ length: concurrency }, worker))
+  signal.throwIfAborted()
+  return missing
 }

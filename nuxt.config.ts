@@ -1,4 +1,4 @@
-import { offlineCacheNames } from './app/data/offline/cacheNames'
+import { offlineShellUrl } from './app/data/offline/cacheNames'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -36,45 +36,19 @@ export default defineNuxtConfig({
         { src: '/pwa-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }
       ]
     },
-    workbox: {
+    // Custom worker (app/service-worker/sw.ts): it precaches build assets and
+    // only reads caches; it never stores pages or API responses.
+    strategies: 'injectManifest',
+    srcDir: 'service-worker',
+    filename: 'sw.ts',
+    injectManifest: {
       globPatterns: ['**/*.{js,css,png,svg,ico,woff2}'],
-      // Pages are server rendered, so there is no prebuilt shell to fall back to.
-      // Navigations are cached at runtime instead (see `pages` below).
-      navigateFallback: null,
-      runtimeCaching: [
-        {
-          urlPattern: ({ request }) => request.mode === 'navigate',
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: offlineCacheNames.pages,
-            networkTimeoutSeconds: 3,
-            // Any cached page renders the app; the list itself refetches client side
-            matchOptions: { ignoreSearch: true },
-            cacheableResponse: { statuses: [200] }
-          }
-        },
-        {
-          urlPattern: /\/api\/photos\//,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: offlineCacheNames.photos,
-            expiration: { maxEntries: 1000 },
-            cacheableResponse: { statuses: [200] }
-          }
-        },
-        {
-          urlPattern: /\/api\/(recipes|recipe-tags|user\/favorites)(\/[^/]+)?(\?|$)/,
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: offlineCacheNames.api,
-            networkTimeoutSeconds: 3,
-            cacheableResponse: { statuses: [200] }
-          }
-        }
-      ]
+      rollupFormat: 'iife'
     },
     client: {
-      installPrompt: false
+      installPrompt: false,
+      // Registered by app/plugins/offline.client.ts, and only in the installed app
+      registerPlugin: false
     },
     devOptions: {
       enabled: false
@@ -87,6 +61,11 @@ export default defineNuxtConfig({
     ]
   },
   css: ['bootstrap/dist/css/bootstrap.min.css'],
+
+  routeRules: {
+    // Client-rendered, so the offline shell's HTML never embeds a session
+    [offlineShellUrl]: { ssr: false }
+  },
 
   runtimeConfig: {
     documentBackend: 'filesystem',
