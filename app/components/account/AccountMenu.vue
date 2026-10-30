@@ -27,6 +27,7 @@ import { recipeKeys } from '~/queries/recipes'
 
 const { loggedIn, user, clear } = useUserSession()
 const queryCache = useQueryCache()
+const { $offlineData } = useNuxtApp()
 
 const flushCaches = () => {
   for (const entry of queryCache.getEntries({ key: recipeKeys.root })) {
@@ -36,8 +37,12 @@ const flushCaches = () => {
 
 const logout = async () => {
   await $fetch('/api/auth/logout', { method: 'POST' })
+  // Order matters: once the session is cleared no new device write can be made
+  // for this user, so the wipe that follows is final. The wipe also stops a
+  // running sync before it writes again.
   await clear()
   flushCaches()
+  await $offlineData.wipe()
   await navigateTo('/login')
 }
 </script>

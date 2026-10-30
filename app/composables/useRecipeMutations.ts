@@ -2,6 +2,7 @@ import { setInfiniteQueryData, useMutation, useQueryCache } from '@pinia/colada'
 import type { RecipeWeb } from '../../types/recipe'
 import { recipeKeys } from '~/queries/recipes'
 import { localRecipeStore } from '~/data/recipes/localStore'
+import { isInstalledPwa } from '~/data/offline/installed'
 import {
   appendRecipeToPages,
   recipeMatchesQuery,
@@ -18,6 +19,10 @@ interface Snapshot {
 
 export const useRecipeMutations = () => {
   const queryCache = useQueryCache()
+  const { user } = useUserSession()
+  // The installed app mirrors creations and deletions to its device copy;
+  // updates arrive through the list refetch
+  const device = isInstalledPwa() ? localRecipeStore : null
 
   const snapshot = (): Snapshot => {
     queryCache.cancelQueries({ key: recipeKeys.root })
@@ -67,8 +72,8 @@ export const useRecipeMutations = () => {
     },
     onSuccess: (created) => {
       queryCache.setQueryData(recipeKeys.detail(created.id), created)
-      // Updates arrive through the list refetch; creations and deletions are mirrored here
-      return localRecipeStore.putRecipes([created]).catch(() => {})
+      const owner = user.value?.id
+      if (device && owner) return device.putRecipes([created], owner).catch(() => {})
     },
     onError: (_error, _vars, { previous }) => restore(previous),
     onSettled: (_data, _error, _vars, { optimisticId }) => {
@@ -100,7 +105,7 @@ export const useRecipeMutations = () => {
       queryCache.setQueryData(recipeKeys.detail(id), null)
       return { previous }
     },
-    onSuccess: (_data, { id }) => localRecipeStore.deleteRecipe(id).catch(() => {}),
+    onSuccess: (_data, { id }) => device?.deleteRecipe(id).catch(() => {}),
     onError: (_error, _vars, { previous }) => restore(previous),
     onSettled: () => invalidate()
   })

@@ -9,6 +9,7 @@ import { recipeLoginRequiredError } from '../../recipes/errors'
 export default defineEventHandler(async (event): Promise<RecipePageResponse> => {
   const query = await getValidatedQuery(event, recipes.list.query.parse)
   const session = await getUserSession(event)
+  if (query.mine && !session.user?.id) throw recipeLoginRequiredError()
   let favoriteIds = new Set<string>()
   if (query.sort === 'favorite') {
     if (!session.user?.id) throw recipeLoginRequiredError()

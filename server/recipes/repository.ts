@@ -33,6 +33,7 @@ export const queryRecipePage = async (
       ]
     }
   ]
+  if (query.mine && userId) filters.push({ ownerId: userId })
   const name = query.name?.trim()
   if (name) filters.push({ name: { $regex: escapeRegex(name), $options: 'i' } })
   if (query.tag) filters.push({ tags: query.tag })

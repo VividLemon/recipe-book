@@ -54,7 +54,12 @@
           <BRow v-if="offline" class="px-3 pt-2">
             <BCol>
               <BAlert :model-value="true" variant="warning" class="mb-0">
-                You're offline. Showing saved recipes; creating and editing are unavailable.
+                <template v-if="$offlineData.installed">
+                  You're offline. Showing saved recipes; creating and editing are unavailable.
+                </template>
+                <template v-else>
+                  You're offline. Install the app to keep your recipes available offline.
+                </template>
               </BAlert>
             </BCol>
           </BRow>
