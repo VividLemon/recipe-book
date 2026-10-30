@@ -157,17 +157,18 @@ const tableMode = useLocalStorage<(typeof tableModes)[number]>(
 )
 
 const { query, update } = useRecipeListRoute()
-// Favorite ranking needs the server, so it is unavailable logged out or offline
-const canSortByFavorite = computed(() => loggedIn.value && !offline.value)
-watch([canSortByFavorite, () => query.value.sortBy], ([canSort, sortBy]) => {
-  if (!canSort && sortBy === 'favorite') {
+// Favorite ranking needs a signed-in user. Offline it cannot be newly chosen,
+// but an existing choice is kept: changing the query would drop the list
+// already on screen and refetch while there is no network.
+watch([loggedIn, () => query.value.sortBy], ([isLoggedIn, sortBy]) => {
+  if (!isLoggedIn && sortBy === 'favorite') {
     update({ sortBy: '' }, { replace: true })
   }
 }, { immediate: true })
 
 const sortByOptions = computed(() => [
   { text: 'Sort By', value: '' },
-  ...(canSortByFavorite.value ? [{ text: 'Favorite', value: 'favorite' }] : []),
+  ...(loggedIn.value ? [{ text: 'Favorite', value: 'favorite', disabled: offline.value }] : []),
   { text: 'Name', value: 'name' },
   { text: 'Created At', value: 'createdAt' },
   { text: 'Recently Updated', value: 'updatedAt' },

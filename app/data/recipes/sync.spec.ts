@@ -28,25 +28,49 @@ describe('syncOwnRecipes', () => {
     const fetch = vi.fn(async (url: string, options?: { query?: Record<string, unknown> }) =>
       url === '/api/recipes' ? pages[options!.query!.page as number] : [{ id: 't', createdAt: 1, text: 'T' }]
     ) as never
-    const store = { replaceAll: vi.fn(async () => {}) }
-    const syncPhotos = vi.fn(async () => {})
+    const store = { replaceAll: vi.fn(async () => {}), markSynced: vi.fn(async () => {}) }
+    const syncPhotos = vi.fn(async () => 0)
+    const signal = new AbortController().signal
 
-    const count = await syncOwnRecipes('me', { fetch, store, syncPhotos, imageFormat: 'webp', now: () => 42 })
+    const count = await syncOwnRecipes('me', { fetch, store, syncPhotos, imageFormat: 'webp', signal, now: () => 42 })
 
     expect(count).toBe(2)
-    expect(fetch).toHaveBeenCalledWith('/api/recipes', { query: { mine: true, page: 1, pageSize: 100 } })
+    expect(fetch).toHaveBeenCalledWith('/api/recipes', { query: { mine: true, page: 1, pageSize: 100 }, signal })
     expect(store.replaceAll).toHaveBeenCalledWith({
       recipes: [recipe('a'), recipe('b', { stepsImages: ['/api/photos/s.png'] })],
       tags: [{ id: 't', createdAt: 1, text: 'T' }],
-      meta: { userId: 'me', lastSyncedAt: 42 }
+      meta: { userId: 'me', lastSyncedAt: 0 }
     })
-    expect(syncPhotos).toHaveBeenCalledWith(['/api/photos/s.png'])
+    expect(syncPhotos).toHaveBeenCalledWith(['/api/photos/s.png'], signal)
+    expect(store.markSynced).toHaveBeenCalledWith('me', 42)
   })
 
   it('leaves the device copy alone when the download fails', async () => {
-    const store = { replaceAll: vi.fn(async () => {}) }
+    const store = { replaceAll: vi.fn(async () => {}), markSynced: vi.fn(async () => {}) }
     const fetch = vi.fn(async () => { throw new Error('offline') }) as never
-    await expect(syncOwnRecipes('me', { fetch, store, syncPhotos: vi.fn(), imageFormat: 'avif' })).rejects.toThrow('offline')
+    const signal = new AbortController().signal
+    await expect(syncOwnRecipes('me', { fetch, store, syncPhotos: vi.fn(async () => 0), imageFormat: 'avif', signal })).rejects.toThrow('offline')
     expect(store.replaceAll).not.toHaveBeenCalled()
+  })
+
+  it('writes nothing once the user changed during the download', async () => {
+    const controller = new AbortController()
+    const store = { replaceAll: vi.fn(async () => {}), markSynced: vi.fn(async () => {}) }
+    const fetch = vi.fn(async (url: string) => {
+      if (url === '/api/recipe-tags') controller.abort()
+      return url === '/api/recipes' ? { items: [], total: 0, page: 1, pageSize: 100, nextPage: null } : []
+    }) as never
+    await expect(syncOwnRecipes('me', { fetch, store, syncPhotos: vi.fn(async () => 0), imageFormat: 'avif', signal: controller.signal }))
+      .rejects.toThrow()
+    expect(store.replaceAll).not.toHaveBeenCalled()
+  })
+
+  it('does not mark the sync complete while photos are missing', async () => {
+    const store = { replaceAll: vi.fn(async () => {}), markSynced: vi.fn(async () => {}) }
+    const fetch = vi.fn(async (url: string) =>
+      url === '/api/recipes' ? { items: [], total: 0, page: 1, pageSize: 100, nextPage: null } : []) as never
+    await syncOwnRecipes('me', { fetch, store, syncPhotos: vi.fn(async () => 2), imageFormat: 'avif', signal: new AbortController().signal })
+    expect(store.replaceAll).toHaveBeenCalled()
+    expect(store.markSynced).not.toHaveBeenCalled()
   })
 })
