@@ -37,6 +37,7 @@
               <BButton
                 variant="outline-secondary"
                 aria-label="Toggle favorite recipe"
+                :disabled="offline"
                 @click="toggleFavorite(recipe.id)"
               >
                 <RecipesFavoriteStarIcon :id="recipe.id" />
@@ -66,6 +67,7 @@ const emit = defineEmits<{
 const isMounted = useMounted() // used by breakpoints
 
 const { toggleFavorite } = useFavoriteRecipe()
+const offline = useOffline()
 
 const { active } = useBreakpoints(breakpointsBootstrapV5)
 const activeBreakpoint = active()
