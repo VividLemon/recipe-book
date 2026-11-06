@@ -129,16 +129,22 @@ docker push <dockerhub-user>/recipe-book:latest
 TrueNAS custom app: it points at the local MongoDB app and mounts a dataset on
 `/data`. Fill in the placeholders before installing.
 
-HTTPS comes from a Tailscale sidecar using `tailscale serve`: the app is
-available at `https://recipe-book.<tailnet>.ts.net` to devices on your tailnet
-only, never on the public internet. HTTPS is required to sign in (the session
-cookie is HTTPS-only) and to install the app for offline use. Before
-installing:
+HTTPS comes from a Caddy container in the same app, using certificates from
+Caddy's own local certificate authority: the app is served at
+`https://192.168.1.194:8443` and nothing leaves the local network. HTTPS is
+required to sign in (the session cookie is HTTPS-only) and to install the app
+for offline use.
 
-1. In the Tailscale admin console, enable MagicDNS and HTTPS Certificates
-   (DNS page), then create an auth key (Settings > Keys).
-2. Create the dataset `/mnt/<pool>/recipe-book` with `data` and `tailscale`
+1. Create the dataset `/mnt/<pool>/recipe-book` with `data` and `caddy`
    folders; give `data` to the `apps` user (568).
-3. Install Tailscale on each phone or computer that should use the app.
+2. Install the app, then copy the CA root certificate from
+   `/mnt/<pool>/recipe-book/caddy/caddy/pki/authorities/local/root.crt`.
+3. Trust that certificate once on each device that uses the app:
+   - Windows/macOS/Linux: import it as a trusted root CA (Firefox has its own
+     certificate store).
+   - iOS: install it as a profile, then enable it under Settings > General >
+     About > Certificate Trust Settings.
+   - Android: Settings > Security > Encryption & credentials > Install a
+     certificate > CA certificate.
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

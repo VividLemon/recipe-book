@@ -1,40 +1,16 @@
 # TrueNAS custom app (Apps > Discover Apps > Custom App > Install via YAML).
 # Replace every <...> value before installing.
 #
-# The app is reached over HTTPS at https://recipe-book.<tailnet>.ts.net, only
-# from devices signed in to your Tailscale network. `tailscale serve` (not
-# Funnel) is used, so nothing is reachable from the public internet.
-# HTTPS is required for signing in (the session cookie is HTTPS-only) and for
-# installing the app for offline use.
+# Everything stays on the TrueNAS box and the local network: the app is served
+# over HTTPS at https://192.168.1.194:8443 by Caddy, using certificates from
+# Caddy's own local certificate authority. Nothing is published to the
+# internet. HTTPS is required for signing in (the session cookie is
+# HTTPS-only) and for installing the app for offline use.
 services:
-  tailscale:
-    image: tailscale/tailscale:stable
-    hostname: recipe-book
-    restart: unless-stopped
-    environment:
-      # Auth key from the Tailscale admin console (Settings > Keys)
-      TS_AUTHKEY: <tailscale-auth-key>
-      TS_STATE_DIR: /var/lib/tailscale
-      TS_SERVE_CONFIG: /config/serve.json
-    volumes:
-      # Keeps the node identity and HTTPS certificate across restarts
-      - /mnt/<pool>/recipe-book/tailscale:/var/lib/tailscale
-    configs:
-      - source: serve
-        target: /config/serve.json
-    devices:
-      - /dev/net/tun:/dev/net/tun
-    cap_add:
-      - net_admin
-
   recipe-book:
     image: <dockerhub-user>/recipe-book:latest
     restart: unless-stopped
-    # Shares the Tailscale container's network: Tailscale terminates HTTPS and
-    # forwards to the app on 127.0.0.1:3000. No port is published on the LAN.
-    network_mode: service:tailscale
-    depends_on:
-      - tailscale
+    # No published port: only Caddy reaches the app, over the app's network
     environment:
       # MongoDB app on the same TrueNAS host (host networking, port 27017).
       # The root user is created in the admin database, hence authSource=admin.
@@ -49,17 +25,35 @@ services:
       # `apps` user (568) that the image runs as
       - /mnt/<pool>/recipe-book/data:/data
 
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - recipe-book
+    ports:
+      # TrueNAS's own web UI already uses 443
+      - '8443:443'
+    volumes:
+      # Keeps the local certificate authority across restarts. Devices trust
+      # its root certificate once: caddy/pki/authorities/local/root.crt
+      - /mnt/<pool>/recipe-book/caddy:/data
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+
 configs:
-  serve:
-    # $${TS_CERT_DOMAIN} is filled in by Tailscale with this node's name; the
-    # doubled $ keeps compose from substituting it
+  caddyfile:
     content: |
       {
-        "TCP": { "443": { "HTTPS": true } },
-        "Web": {
-          "$${TS_CERT_DOMAIN}:443": {
-            "Handlers": { "/": { "Proxy": "http://127.0.0.1:3000" } }
-          }
-        },
-        "AllowFunnel": { "$${TS_CERT_DOMAIN}:443": false }
+        # Certificates come from Caddy's local CA, never from the internet
+        local_certs
+        skip_install_trust
+        # Port 80 belongs to the TrueNAS UI; no http -> https redirect server
+        auto_https disable_redirects
+        # Browsers send no server name when connecting by IP address
+        default_sni 192.168.1.194
+      }
+
+      https://192.168.1.194 {
+        reverse_proxy recipe-book:3000
       }
