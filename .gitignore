@@ -29,3 +29,6 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+
+# Deployment files with real values (secrets); see deploy/truenas/compose.yaml
+deploy/truenas/*.local.yaml
