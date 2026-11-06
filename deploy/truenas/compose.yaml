@@ -8,7 +8,7 @@
 # HTTPS-only) and for installing the app for offline use.
 services:
   recipe-book:
-    image: main-mirrored/recipe-book:latest
+    image: <dockerhub-user>/recipe-book:latest
     restart: unless-stopped
     # No published port: only Caddy reaches the app, over the app's network
     environment:
@@ -23,7 +23,7 @@ services:
     volumes:
       # Photos (and anything else on the filesystem backend), owned by the
       # `apps` user (568) that the image runs as
-      - /mnt/<pool>/recipe-book/data:/data
+      - /mnt/main-mirrored/recipe-book/data:/data
 
   caddy:
     image: caddy:2
@@ -36,7 +36,7 @@ services:
     volumes:
       # Keeps the local certificate authority across restarts. Devices trust
       # its root certificate once: caddy/pki/authorities/local/root.crt
-      - /mnt/<pool>/recipe-book/caddy:/data
+      - /mnt/main-mirrored/recipe-book/caddy:/data
     configs:
       - source: caddyfile
         target: /etc/caddy/Caddyfile

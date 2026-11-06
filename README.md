@@ -121,8 +121,8 @@ The image defaults to MongoDB for documents and stores photos as files under
 build time.
 
 ```bash
-docker build -t main-mirrored/recipe-book:latest .
-docker push main-mirrored/recipe-book:latest
+docker build -t <dockerhub-user>/recipe-book:latest .
+docker push <dockerhub-user>/recipe-book:latest
 ```
 
 [deploy/truenas/compose.yaml](deploy/truenas/compose.yaml) installs it as a
@@ -135,10 +135,10 @@ Caddy's own local certificate authority: the app is served at
 required to sign in (the session cookie is HTTPS-only) and to install the app
 for offline use.
 
-1. Create the dataset `/mnt/<pool>/recipe-book` with `data` and `caddy`
+1. In the dataset `/mnt/main-mirrored/recipe-book`, create `data` and `caddy`
    folders; give `data` to the `apps` user (568).
 2. Install the app, then copy the CA root certificate from
-   `/mnt/<pool>/recipe-book/caddy/caddy/pki/authorities/local/root.crt`.
+   `/mnt/main-mirrored/recipe-book/caddy/caddy/pki/authorities/local/root.crt`.
 3. Trust that certificate once on each device that uses the app:
    - Windows/macOS/Linux: import it as a trusted root CA (Firefox has its own
      certificate store).
