@@ -8,7 +8,7 @@
 # HTTPS-only) and for installing the app for offline use.
 services:
   recipe-book:
-    image: <dockerhub-user>/recipe-book:latest
+    image: main-mirrored/recipe-book:latest
     restart: unless-stopped
     # No published port: only Caddy reaches the app, over the app's network
     environment:

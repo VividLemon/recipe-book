@@ -121,8 +121,8 @@ The image defaults to MongoDB for documents and stores photos as files under
 build time.
 
 ```bash
-docker build -t <dockerhub-user>/recipe-book:latest .
-docker push <dockerhub-user>/recipe-book:latest
+docker build -t main-mirrored/recipe-book:latest .
+docker push main-mirrored/recipe-book:latest
 ```
 
 [deploy/truenas/compose.yaml](deploy/truenas/compose.yaml) installs it as a
