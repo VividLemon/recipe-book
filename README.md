@@ -112,4 +112,21 @@ and `server/photos` contain context types, repositories, and application
 services. `server/storage` is infrastructure and exposes backend-neutral ports;
 legacy `server/utils` modules remain compatibility facades for existing imports.
 
+## Docker and TrueNAS
+
+The [Dockerfile](Dockerfile) follows the [Nuxt Docker guide](https://nuxt.com/deploy/docker).
+The image defaults to MongoDB for documents and stores photos as files under
+`/data`, running as TrueNAS's `apps` user (568; override with the `APP_UID` and
+`APP_GID` build args). Secrets are supplied when the container starts, never at
+build time.
+
+```bash
+docker build -t <dockerhub-user>/recipe-book:latest .
+docker push <dockerhub-user>/recipe-book:latest
+```
+
+[deploy/truenas/compose.yaml](deploy/truenas/compose.yaml) installs it as a
+TrueNAS custom app: it points at the local MongoDB app and mounts a dataset on
+`/data`. Fill in the placeholders before installing.
+
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

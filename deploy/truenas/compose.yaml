@@ -1,0 +1,22 @@
+# TrueNAS custom app (Apps > Discover Apps > Custom App > Install via YAML).
+# Replace every <...> value before installing. Stays on the local network:
+# nothing here is published beyond the TrueNAS host's LAN address.
+services:
+  recipe-book:
+    image: <dockerhub-user>/recipe-book:latest
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      # MongoDB app on the same TrueNAS host (host networking, port 27017).
+      # The root user is created in the admin database, hence authSource=admin.
+      # URL-encode special characters in the password (e.g. ! -> %21).
+      NUXT_MONGODB_URI: mongodb://root:<mongodb-password>@192.168.1.194:27017/?authSource=admin
+      NUXT_MONGODB_DATABASE: recipeBook
+      # At least 32 random characters, e.g. from `openssl rand -base64 32`.
+      # Changing it signs everyone out.
+      NUXT_SESSION_PASSWORD: <session-secret>
+    volumes:
+      # Dataset for photos (and anything else on the filesystem backend),
+      # owned by the `apps` user (568) that the image runs as
+      - /mnt/<pool>/recipe-book:/data
