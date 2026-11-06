@@ -129,4 +129,16 @@ docker push <dockerhub-user>/recipe-book:latest
 TrueNAS custom app: it points at the local MongoDB app and mounts a dataset on
 `/data`. Fill in the placeholders before installing.
 
+HTTPS comes from a Tailscale sidecar using `tailscale serve`: the app is
+available at `https://recipe-book.<tailnet>.ts.net` to devices on your tailnet
+only, never on the public internet. HTTPS is required to sign in (the session
+cookie is HTTPS-only) and to install the app for offline use. Before
+installing:
+
+1. In the Tailscale admin console, enable MagicDNS and HTTPS Certificates
+   (DNS page), then create an auth key (Settings > Keys).
+2. Create the dataset `/mnt/<pool>/recipe-book` with `data` and `tailscale`
+   folders; give `data` to the `apps` user (568).
+3. Install Tailscale on each phone or computer that should use the app.
+
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.

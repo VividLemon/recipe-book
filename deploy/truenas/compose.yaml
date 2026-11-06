@@ -1,12 +1,40 @@
 # TrueNAS custom app (Apps > Discover Apps > Custom App > Install via YAML).
-# Replace every <...> value before installing. Stays on the local network:
-# nothing here is published beyond the TrueNAS host's LAN address.
+# Replace every <...> value before installing.
+#
+# The app is reached over HTTPS at https://recipe-book.<tailnet>.ts.net, only
+# from devices signed in to your Tailscale network. `tailscale serve` (not
+# Funnel) is used, so nothing is reachable from the public internet.
+# HTTPS is required for signing in (the session cookie is HTTPS-only) and for
+# installing the app for offline use.
 services:
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: recipe-book
+    restart: unless-stopped
+    environment:
+      # Auth key from the Tailscale admin console (Settings > Keys)
+      TS_AUTHKEY: <tailscale-auth-key>
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+    volumes:
+      # Keeps the node identity and HTTPS certificate across restarts
+      - /mnt/<pool>/recipe-book/tailscale:/var/lib/tailscale
+    configs:
+      - source: serve
+        target: /config/serve.json
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+
   recipe-book:
     image: <dockerhub-user>/recipe-book:latest
     restart: unless-stopped
-    ports:
-      - '3000:3000'
+    # Shares the Tailscale container's network: Tailscale terminates HTTPS and
+    # forwards to the app on 127.0.0.1:3000. No port is published on the LAN.
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
     environment:
       # MongoDB app on the same TrueNAS host (host networking, port 27017).
       # The root user is created in the admin database, hence authSource=admin.
@@ -17,6 +45,21 @@ services:
       # Changing it signs everyone out.
       NUXT_SESSION_PASSWORD: <session-secret>
     volumes:
-      # Dataset for photos (and anything else on the filesystem backend),
-      # owned by the `apps` user (568) that the image runs as
-      - /mnt/<pool>/recipe-book:/data
+      # Photos (and anything else on the filesystem backend), owned by the
+      # `apps` user (568) that the image runs as
+      - /mnt/<pool>/recipe-book/data:/data
+
+configs:
+  serve:
+    # $${TS_CERT_DOMAIN} is filled in by Tailscale with this node's name; the
+    # doubled $ keeps compose from substituting it
+    content: |
+      {
+        "TCP": { "443": { "HTTPS": true } },
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": { "/": { "Proxy": "http://127.0.0.1:3000" } }
+          }
+        },
+        "AllowFunnel": { "$${TS_CERT_DOMAIN}:443": false }
+      }
